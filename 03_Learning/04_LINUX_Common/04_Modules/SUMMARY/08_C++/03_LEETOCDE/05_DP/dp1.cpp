@@ -148,18 +148,28 @@ bool isSubsetSumRec(std::vector<int> arr, int sum){
 
     1234   -> 1234
 */
-int NumOfPartitionR(int n_first, int n_remaining){
-    if (n_remaining <= 1) return 1;
+/*
+    NumOfPartition(n) = NumOfPartition(n - 1) + ... NumOfPartition(0)
 
-    int rett = 0;
-    for (int i = 1; i <= n_remaining; i++){
-        rett += NumOfPartitionR(i, n_remaining - i);
+    Ex: {1,2}
+    12 -> Partitions(0) = 1, as there are 0 elements remaining
+    1 2 -> Partitions(1) = 1, as there are 1 elements remaining
+*/
+int NumOfPartition(int n){
+    if (n <= 1) return 1;
+
+    int res = 0;
+    int res_tmp;
+    for (int x = 0; x < n; x++){
+        res_tmp = NumOfPartition(x);
+        // if (n == 3){
+        //     printf("[%d] -> %d\n", x, res_tmp);
+        // }
+
+        res += res_tmp;
     }
 
-    return rett;
-}
-int NumOfPartition(int n){
-    return NumOfPartitionR(1, n);
+    return res;
 }
 
 /*
@@ -356,7 +366,7 @@ int main(){
 
     res = UpToKConsecutivevalues_with_OptionsPerSlot(3,2,2);
     std::cout << "countStringsUpToKConsecutive1s = " << res << std::endl;
-    // output is 7 (up to 2 consecutive 1s in a binary string)
+    // output is 
     /*
         100, 010, 001
         101
