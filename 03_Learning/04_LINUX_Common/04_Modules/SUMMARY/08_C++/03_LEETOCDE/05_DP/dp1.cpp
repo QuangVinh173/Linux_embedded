@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <climits>
+#include <cmath>
 
 // Max of 2 non-adjacent num in arr
 int MaxRobR(std::vector<int> house, int i, std::vector<int>& dp){
@@ -225,6 +226,94 @@ int minCoins(std::vector<int> coins, int sum){
     return minCoinsRecur(coins, sum, n - 1);
 }
 
+/* 
+    + n bits
+    + up to consecutive 1 values
+    + 2 per slot
+
+    Meaning:
+    if current idx:
+    + 0 => recur next idx
+    + 1 => recur next+2 idx
+ */
+int countStringsNoConsecutive1s(int n){
+
+    if (n <= 0) return 1;
+    
+    int take_1, take_0;
+
+    take_1 = countStringsNoConsecutive1s(n - 2);
+    take_0 = countStringsNoConsecutive1s(n - 1);
+
+    //if (n == 4) printf("%d - %d\n", take_1, take_0);
+
+    return take_1 + take_0;
+}
+
+/* 
+    + n bits
+    + up to consecutive 2 values
+    + 2 per slot
+
+    Meaning:
+    if current idx:
+    + 0 => recur next idx
+    + 1 => recur next+2 idx (10xx)
+    + 1 => recur next+3 idx (110xx)
+ */
+int countStringsUpTo2Consecutive1s(int n){
+
+    if (n <= 2)
+        return 1 << n;
+    
+    int take_1, take_0, take_11;
+
+    take_1 = countStringsUpTo2Consecutive1s(n - 2);
+    take_11 = countStringsUpTo2Consecutive1s(n - 3);
+    take_0 = countStringsUpTo2Consecutive1s(n - 1);
+
+    return take_1 + take_0 + take_11;
+}
+
+/* 
+    + n bits
+    + up to consecutive k values
+    + 2 per slot
+ */
+int countStringsUpToKConsecutive1s(int n, int k){
+
+    if (n <= k)
+        return 1 << n; // 2^n
+
+    int cnt = 0;
+    for (int i = 1; i <= k + 1; i++){
+        cnt += countStringsUpToKConsecutive1s(n - i, k);
+    }
+
+    return cnt;
+}
+
+/* The most general case:
+    + n bits
+    + up to consecutive k values
+    + options per slot
+ */
+int UpToKConsecutivevalues_with_OptionsPerSlot(int n, int k, int options)
+{
+    if (n <= k)
+        return pow(options, n); // options^n
+
+    int cnt = 0;
+
+    for (int i = 1; i <= k + 1; i++)
+    {
+        cnt += UpToKConsecutivevalues_with_OptionsPerSlot(n - i, k, options)
+             * (options - 1);
+    }
+
+    return cnt;
+}
+
 int main(){
     int res;
     bool ret;
@@ -264,4 +353,15 @@ int main(){
     std::vector<int> coins1 = {1, 2};
     std::cout << "minCoins = " << minCoins(coins1, 3) << std::endl;
     // output is 2
+
+    res = UpToKConsecutivevalues_with_OptionsPerSlot(3,2,2);
+    std::cout << "countStringsUpToKConsecutive1s = " << res << std::endl;
+    // output is 7 (up to 2 consecutive 1s in a binary string)
+    /*
+        100, 010, 001
+        101
+        000
+
+        110, 011
+    */
 }
