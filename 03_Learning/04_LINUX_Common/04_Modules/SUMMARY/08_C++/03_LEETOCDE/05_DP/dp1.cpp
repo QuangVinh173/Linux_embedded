@@ -324,6 +324,63 @@ int UpToKConsecutivevalues_with_OptionsPerSlot(int n, int k, int options)
     return cnt;
 }
 
+int RodCutR(std::vector<int> price, int n){
+    if (n <= 1) return price[n];
+    if (n == 2) return std::max(2*price[n-1], price[n]);
+
+    int res = 0, max = 0;
+    for (int i = n; i > 0; i--){
+        res = price[i] + RodCutR(price, n - i);
+        max = std::max(res, max);
+    }
+
+    return max;
+}
+int RodCut(std::vector<int> price){
+    int n = price.size();
+    return RodCutR(price, n - 1);
+}
+
+int MinJumpR(std::vector<int> jump, int i){
+    if (i == jump.size() - 1) return 0;
+    else if (i >= jump.size()) return INT_MAX;
+
+    int sum_step = 0;
+    int min_step = INT_MAX;
+    for (int step = 1; step <= jump[i]; step++){
+        sum_step = MinJumpR(jump, i + step);
+        if (sum_step != INT_MAX) min_step = std::min(min_step, sum_step + 1);
+    }
+
+    return min_step;
+}
+int MinJump(std::vector<int> jump){
+    int n = jump.size();
+    int res = MinJumpR(jump, 0);
+    return (res == INT_MAX) ? -1 : res;
+}
+
+int FindPathR(int m, int n, int m_idx, int n_idx){
+
+    if (m_idx >= m or n_idx >= n) return 0;
+    else if (m_idx == m - 1 and n_idx == n - 1) return 1;
+
+    int res_right = 0;
+    int res_down = 0;
+
+    // right
+    res_right = FindPathR(m, n, m_idx + 1, n_idx);
+
+    // down 
+    res_down = FindPathR(m, n, m_idx, n_idx + 1);
+
+    return res_right + res_down;
+}
+int FindPath(int m, int n){
+    return FindPathR(m, n, 0, 0);
+}
+
+
 int main(){
     int res;
     bool ret;
@@ -374,4 +431,15 @@ int main(){
 
         110, 011
     */
+
+    std::vector<int> price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+    std::cout << "RodCut = " << RodCut(price) << std::endl;
+    // output is 22, sum of length 2 and 6 = 5 + 17 = 22
+
+    std::vector<int> jump = {1, 3, 5, 8, 9, 2, 6, 7, 6, 8, 9};
+    std::cout << "MinJump = " << MinJump(jump) << std::endl;
+    // output is 3, 1st -> 2nd -> 5th -> end (3 steps)
+
+    std::cout << "FindPath = " << FindPath(2,3) << std::endl;
+    // output is 3, there are 3 steps to go from top-left -> bottom-right
 }
