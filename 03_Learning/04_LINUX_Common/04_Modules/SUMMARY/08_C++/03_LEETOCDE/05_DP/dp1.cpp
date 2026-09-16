@@ -380,6 +380,50 @@ int FindPath(int m, int n){
     return FindPathR(m, n, 0, 0);
 }
 
+/*
+    5 -max- 10
+    (5,6) = (4,2) + ... + (4,6)
+    (5,3) = (4,-1) + ... + (4,3) => (4,0) + ... + (4,3)
+    (5,8) = (4,4) + ... + (4,6)
+*/
+int countPermWithkInversions(int n, int k){
+    // base case
+    if (n == 0) return 0;
+    if (k == 0) return 1; // meaning (n,0) = 1
+ 
+    int max_case_n_minus_1 = 0;
+    for (int i = 1; i < (n - 1); i++)
+        max_case_n_minus_1 += i;
+    max_case_n_minus_1 = std::min(max_case_n_minus_1, k);
+    // end = min(max_1 digit of n-1, k)
+ 
+    int start = k - (n - 1); // k - (max of 1 digit inv n)
+    if (start < 0) start = 0;
+ 
+    int res = 0;
+    for (int i = start; i <= max_case_n_minus_1; i++){
+        res += countPermWithkInversions(n - 1, i);
+    }
+ 
+    return res;
+}
+
+/*
+    if n >= 7 -> apply optimalKeys else n 
+
+    Set recursive optimalKeys(numA_at_first) if numA_at_first >= 7
+*/
+int optimalKeys(int n) {
+    if (n <= 6) return n;
+
+    int res, max = 0;
+    for(int numA_at_first = 1; numA_at_first <= n - 3; numA_at_first++){
+        res = (n - numA_at_first - 1)*optimalKeys(numA_at_first);
+        max = std::max(max, res);
+    }
+
+    return max;
+}
 
 int main(){
     int res;
@@ -442,4 +486,13 @@ int main(){
 
     std::cout << "FindPath = " << FindPath(2,3) << std::endl;
     // output is 3, there are 3 steps to go from top-left -> bottom-right
+
+    res = countPermWithkInversions(4,4);
+    std::cout << "countPermWithkInversions = " << res << std::endl;
+    // output is 5 including {4132, 3412, 3241, 4213, 4231}
+
+    int n = 7;
+    res = optimalKeys(n);
+    std::cout << "optimalKeys = " << res << std::endl;
+    // output is 9 as 1112344 -> AAA [234]AAA [4]AAA -> 9 'A'
 }
