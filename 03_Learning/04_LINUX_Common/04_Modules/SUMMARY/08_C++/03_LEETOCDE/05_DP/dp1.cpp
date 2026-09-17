@@ -2,6 +2,7 @@
 #include <vector>
 #include <climits>
 #include <cmath>
+using namespace std;
 
 // Max of 2 non-adjacent num in arr
 int MaxRobR(std::vector<int> house, int i, std::vector<int>& dp){
@@ -425,6 +426,115 @@ int optimalKeys(int n) {
     return max;
 }
 
+/*
+    why max(i*integerBreak(n - i), i*(n-i))???
+ 
+    Ex n = 4 -> max product is 2*2 = 4
+    But max = 2*integerBreak(2) = 2*1 = 2
+              3*integerBreak(1) = 3*1 = 3
+        => Key is don't break 2 any further, just get max(broken value, real value)
+*/
+int integerBreak(int n){
+    if (n <= 1) return 1;
+ 
+    int res, max = 0;
+    for (int i = 1; i < n; i++){
+        res = std::max(i*integerBreak(n - i), i*(n-i));
+        max = std::max(max, res);
+    }
+ 
+    return max;
+}
+ 
+/*
+    2 keyboards => n characters -> min actions
+    4 keyboards => n actions    -> max characters
+*/
+int two_keyboards(int n){
+    if (n <= 1) return 0;
+    if (n <= 3) return n;
+ 
+    int res = 0, min = INT_MAX;
+    for (int i = 1; i < n; i++){
+        int paste_times = (n%i == 0) ? n/i : -1;
+        if (paste_times != -1){
+            res = two_keyboards(i) + paste_times;
+            min = std::min(res, min);
+        }
+    }
+ 
+    return min;
+}
+int four_keyboards(int n){
+    if (n <= 4) return n;
+ 
+    int res, max = 0;
+    for (int A_first = 1; A_first <= n - 3; A_first++){
+        res = std::max(four_keyboards(A_first)*(n - A_first - 1), n);
+        max = std::max(res, max);
+    }
+ 
+    return max;
+}
+ 
+/* 
+    max(n) = MAX(max(n-1), A, max(n-1)*A)
+*/
+int maxProductSubsequence(vector<int>& nums){
+    int n = nums.size();
+    vector<vector<int>> dp(2,vector<int>(n+1, -1));
+ 
+    dp[0][1] = dp[1][1] = nums[0];
+    dp[0][2] = min(nums[1] * nums[0], nums[0]);
+    dp[1][2] = max(nums[1] * nums[0], max(nums[0], nums[1]));
+ 
+    // return maxProductR(nums, n, dp);
+    for (int i = 3; i <= n; i++){
+        if (nums[i-1] < 0){
+            dp[1][i] = max(nums[i-1]*dp[0][i-1], max(dp[1][i-1], nums[i-1]));
+            dp[0][i] = min(nums[i-1]*dp[1][i-1], min(dp[0][i-1], nums[i-1]));
+ 
+        }
+        else {
+            dp[1][i] = max(nums[i-1]*dp[1][i-1], max(dp[1][i-1], nums[i-1]));
+            dp[0][i] = min(nums[i-1]*dp[0][i-1], min(dp[0][i-1], nums[i-1]));
+        }
+    }
+ 
+    //printf("%d vs %d\n", dp[0][3], dp[1][3]);
+ 
+    return dp[1][n];
+}
+
+/* 
+    max(n) = MAX(A[n-1], max(n-1)*A[n-1])
+*/
+int maxProductSubaray(vector<int>& nums){
+    int n = nums.size();
+    vector<vector<int>> dp(2,vector<int>(n+1, -1));
+ 
+    dp[0][1] = dp[1][1] = nums[0];
+
+    dp[1][0] = dp[1][1];
+ 
+    for (int i = 2; i <= n; i++){
+        if (nums[i-1] < 0){
+            dp[1][i] = max(nums[i-1]*dp[0][i-1], nums[i-1]);
+            dp[0][i] = min(nums[i-1]*dp[1][i-1], nums[i-1]);
+ 
+        }
+        else {
+            dp[1][i] = max(nums[i-1]*dp[1][i-1], nums[i-1]);
+            dp[0][i] = min(nums[i-1]*dp[0][i-1], nums[i-1]);
+        }
+
+        dp[1][0] = max(dp[1][0], dp[1][i]);
+    }
+ 
+    return dp[1][0];
+}
+
+
 int main(){
     int res;
     bool ret;
@@ -495,4 +605,17 @@ int main(){
     res = optimalKeys(n);
     std::cout << "optimalKeys = " << res << std::endl;
     // output is 9 as 1112344 -> AAA [234]AAA [4]AAA -> 9 'A'
+
+    res = integerBreak(6);
+    std::cout << "integerBreak = " << res << std::endl;
+    // output is 9 as 6 = 3+3, 3*3 = 9 = max
+
+    vector<int> nums = {-10, -2, -1, 5};
+    res = maxProductSubaray(nums);
+    std::cout << "maxProductSubaray = " << res << std::endl;
+    // output is 20 as [-10, -2]
+
+    res = maxProductSubsequence(nums);
+    std::cout << "maxProductSubsequence = " << res << std::endl;
+    // output is 100 as [-10, -2] and [5]
 }
