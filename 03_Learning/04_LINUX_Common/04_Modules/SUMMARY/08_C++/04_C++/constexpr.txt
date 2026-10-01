@@ -1,0 +1,49 @@
+constexpr
+1. variable
+ 
+int constexpr n = 10;
+int arr[n];
+int main() 
+  -> OK
+  
+int n = 10;
+int arr[n];
+int main() 
+  -> Not ok as n is specified at run time
+   But arr[n] must be at compile time
+   
+2. function
+int constexpr sum(int a, int b){
+  return a + b}
+int main() {
+  res = sum(1,2)
+}
+  -> res is calculated at compile time 
+  
+3. if-else
+template<typename T>
+void PrintAll(const T& x){
+    if constexpr (is_arithmetic_v<T>){
+        cout << setw(3) << x;
+    }
+ 
+    else {
+        for (const auto& a : x){
+            PrintAll(a);
+        }
+        cout << "\n";
+    }
+}
+Ex:
+    vector<vector<int>> mat =
+    {
+        {1, 2, 4},
+        {-1, -2, 3}
+    };
+  
+  -> PrintAll(vec<vec<int>>) -> PrintAll(vec<int>) -> PrintAll(int)
+                              -> PrintAll(int)
+                              -> PrintAll(int)
+                  -> PrintAll(vec<int>)  -> PrintAll(int)
+                                         -> PrintAll(int)
+                              -> PrintAll(int)
