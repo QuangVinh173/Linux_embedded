@@ -4,6 +4,7 @@
 #include <cmath>
 #include <unordered_map>
 #include <set>
+#include <map>
 #include <algorithm> // for find()
 using namespace std;
 
@@ -298,6 +299,512 @@ int NumOfAP1(vector<int> arr){
  
     // use this partition to generate all possible subseq, then check AP
     return NumOfAPR1(arr, 0, test);
+}
+
+// 2/10
+int LongestSubarrayR(string& s1, int i, string& s2, int j, vector<vector<int>>& dp){
+    if (i < 0 or j < 0) return 0;
+ 
+    int commonLen = 0;
+    int maxx = 0;
+ 
+    if (dp[i][j] != -1) {
+        //printf("%d, %d\n", i, j);
+        return dp[i][j];
+    }
+ 
+    int tmp_i = i, tmp_j = j;
+    while ((tmp_i >= 0 and tmp_j >= 0) and s1[tmp_i] == s2[tmp_j]){
+        commonLen++;
+        tmp_i--;
+        tmp_j--;
+    }
+ 
+    int len1, len2;
+    len1 = LongestSubarrayR(s1, i - 1, s2, j, dp);
+    len2 = LongestSubarrayR(s1, i, s2, j - 1, dp);
+ 
+    maxx = max(commonLen, max(len1, len2));
+ 
+    return dp[i][j] = maxx;
+}
+int LongestSubarray(string s1, string s2){
+    int n1 = s1.length();
+    int n2 = s2.length();
+ 
+    vector<vector<int>> dp(n1, vector<int>(n2, -1));
+ 
+    return LongestSubarrayR(s1, n1 - 1, s2, n2 - 1, dp);
+}
+ 
+int LongestCommonStrR(string& s, int i, int j, vector<vector<int>>& dp){
+    int n = s.length();
+    if (i >= j) return 0;
+   
+    if (i == n - 1 or j == n) return 0;
+ 
+    if (dp[i][j] != -1){
+        return dp[i][j];
+    }
+ 
+    int res = 0;
+    int x = i, y = j;
+    while ((x < j and y < n) and s[x] == s[y]){
+        res++;
+        x++;
+        y++;
+    }
+ 
+    int res1, res2;
+    res1 = LongestCommonStrR(s, i + 1, j, dp);
+    res2 = LongestCommonStrR(s, i, j + 1, dp);
+ 
+    return dp[i][j] = max(res, max(res1, res2));
+}
+string LongestCommonStr(string& s){
+    int n = s.length();
+ 
+    string out;
+    vector<vector<int>> dp(n, vector<int>(n, -1));
+    int res;
+    int maxx = 0;
+    int i_max = 0;
+ 
+    res = LongestCommonStrR(s, 0, 1, dp);
+ 
+    for (int i = n - 1; i >= 0; i--){
+        for (int j = n - 1; j > i; j--){
+            if (maxx < dp[i][j]){
+                maxx = dp[i][j];
+                i_max = i;
+            }
+        }
+    }
+ 
+    for (int i = i_max; i < i_max + maxx; i++){
+        out.push_back(s[i]);
+    }
+ 
+    return out;
+}
+
+int PartitionArrayR(vector<int> arr, int k, int idx, vector<vector<int>>& dp){
+    int n = arr.size();
+    if (idx == n) return 0;
+
+    if (dp[idx][k] != -1) return dp[idx][k];
+
+    int res;
+    int cur_num_max;
+    int maxx = INT_MIN;
+    for (int i = idx; i < min(idx + k, n); i++){
+        cur_num_max = INT_MIN;
+        for (int j = idx; j <= i; j++){
+            cur_num_max = max(arr[j], cur_num_max);
+        }
+
+        res = (i - idx + 1)*cur_num_max + PartitionArrayR(arr, k, i + 1, dp);
+        maxx = max(maxx, res);
+    }
+
+    dp[idx][k] = maxx;
+
+    return maxx;
+}
+int PartitionArray(vector<int> arr, int k){
+    int n = arr.size();
+    vector<vector<int>> dp(n, vector<int>(k + 1, -1));
+    return PartitionArrayR(arr, k, 0, dp);
+}
+
+// 3/10
+int ShortCommonR(string s1, string s2, int idx1, int idx2){
+    // base case
+    if (idx1 < 0 or idx2 < 0) return 0;
+
+    int res1 = 0, res2 = 0, res3 = 0;
+    int maxx = 0;
+    if (s1[idx1] == s2[idx2]){
+        res1 = 1 + ShortCommonR(s1, s2, idx1 - 1, idx2 - 1);
+    }
+    else {
+        res2 = ShortCommonR(s1, s2, idx1 - 1, idx2);
+
+        res3 = ShortCommonR(s1, s2, idx1, idx2 - 1);
+    }
+
+    maxx = max(max(res2, res3), res1);
+
+    return maxx;
+}
+int ShortCommon(string s1, string s2){
+    int n1 = s1.length();
+    int n2 = s2.length();
+
+    int res = ShortCommonR(s1, s2, n1 - 1, n2 - 1);
+
+    return res + (n1 - res) + (n2 - res);
+}
+
+int ShortCommonR1(string s1, string s2, int idx1, int idx2){
+    // base case
+    if (idx1 < 0){
+        return idx2 + 1;
+    }
+    if (idx2 < 0){
+        return idx1 + 1;
+    }
+
+    int res1 = 0, res2 = 0, res3 = 0;
+    int minn = 0;
+    if (s1[idx1] == s2[idx2]){
+        res1 = 1 + ShortCommonR1(s1, s2, idx1 - 1, idx2 - 1);
+
+        minn = res1;
+    }
+    else {
+        res2 = 1 + ShortCommonR1(s1, s2, idx1 - 1, idx2);
+        res3 = 1 + ShortCommonR1(s1, s2, idx1, idx2 - 1);
+
+        minn = min(res2, res3);
+    }
+
+    return minn;
+}
+int ShortCommon1(string s1, string s2){
+    int n1 = s1.length();
+    int n2 = s2.length();
+
+    return ShortCommonR1(s1, s2, n1 - 1, n2 - 1);
+}
+
+int longestRepeatedSubSeq1R(string& s, int idx1, int idx2, vector<vector<int>>& dp){
+    // base case
+    int n = s.length();
+    if (idx1 >= n or idx2 >= n) return 0;
+
+    if (dp[idx1][idx2] != -1) {
+        printf("%d, %d\n", idx1, idx2);
+        return dp[idx1][idx2];
+    }
+
+    int take = 0, not_take = 0;
+    if (idx1 != idx2 and s[idx1] == s[idx2]){
+        take = 1 + longestRepeatedSubSeq1R(s, idx1 + 1, idx2 + 1, dp);
+    }    
+
+    int res1, res2;
+    res1 = longestRepeatedSubSeq1R(s, idx1 + 1, idx2, dp);
+    res2 = longestRepeatedSubSeq1R(s, idx1, idx2 + 1, dp);
+
+    not_take = max(res1, res2);
+
+    return dp[idx1][idx2] = max(take, not_take);
+}
+int longestRepeatedSubSeq1(string s){
+    int n = s.length();
+    vector<vector<int>> dp(n, vector<int>(n, -1));
+
+    return longestRepeatedSubSeq1R(s, 0, 0, dp);
+}
+
+string longestRepeatedSubSeqStrR(string& s, int idx1, int idx2, vector<vector<string>>& dp, string add_str){
+    // base case
+    int n = s.length();
+    if (idx1 >= n or idx2 >= n) return add_str;
+
+    if (dp[idx1][idx2] != "") {
+        //printf("%d, %d\n", idx1, idx2);
+        return dp[idx1][idx2];
+    }
+
+    string out, out1, out2;
+    string maxx;
+    if (idx1 != idx2 and s[idx1] == s[idx2]){
+        add_str.push_back(s[idx1]);
+        out = longestRepeatedSubSeqStrR(s, idx1 + 1, idx2 + 1, dp, add_str);
+        add_str.pop_back();
+    }
+
+    out1 = longestRepeatedSubSeqStrR(s, idx1 + 1, idx2, dp, add_str);
+    out2 = longestRepeatedSubSeqStrR(s, idx1, idx2 + 1, dp, add_str);
+
+    if (out1.length() > out2.length()){
+        maxx = out1;
+    }
+    else {
+        maxx = out2;
+    }
+
+    if (maxx.size() < out.size()){
+        maxx = out;
+    }
+
+    return dp[idx1][idx2] = maxx;
+}
+string longestRepeatedSubSeqStr(string& s){
+    int n = s.length();
+    vector<vector<string>> dp(n, vector<string>(n, ""));
+
+    return longestRepeatedSubSeqStrR(s, 0, 0, dp, "");
+}
+
+/*
+Alternative ways: 
+ + Find the max len of lcs
+ + Delete = n_s1 - len
+ + Insert = n_s2 - len
+ => total = Delete + Insert
+*/
+int MinDeleteOrInsertR(string s1, int i1, string s2, int i2){
+
+    // base case
+    if (i1 < 0) {
+        return i2 + 1; // for inserting the rest of s2 on s1
+    }
+    if (i2 < 0){
+        return i1 + 1; // for delete the rest of s2 on s1
+    }
+
+    int res1 = INT_MAX, res2 = INT_MAX;
+    int minn = INT_MAX;
+    if (s1[i1] == s2[i2]){
+        res1 = MinDeleteOrInsertR(s1, i1 - 1, s2, i2 - 1);
+    }
+
+    else {
+        // delete on s1
+        res1 = 1 + MinDeleteOrInsertR(s1, i1 - 1, s2, i2);
+
+        // insert on s1
+        res2 = 1 + MinDeleteOrInsertR(s1, i1, s2, i2 - 1);
+    }
+
+    return minn = min(res1, res2);
+}
+int MinDeleteOrInsert(string s1, string s2){
+    int n1 = s1.length();
+    int n2 = s2.length();
+
+    return MinDeleteOrInsertR(s1, n1 - 1, s2, n2 - 1);
+}
+
+// 4/10
+const long long MOD = 1000000007;
+int CountDistinctSubseq(const string& str)
+{
+    int n = str.length();
+
+    vector<long long> dp(n + 1, 0);
+
+    // dp[0] = empty subsequence
+    dp[0] = 1;
+
+    // last[c] = 1-based position where c was previously seen
+    unordered_map<char, int> last;
+
+    for (int i = 1; i <= n; i++)
+    {
+        char c = str[i - 1];
+
+        // Take or don't take current character
+        dp[i] = (2 * dp[i - 1]) % MOD;
+
+        if (last.count(c))
+        {
+            int prev = last[c];
+
+            // Remove duplicates created by the previous occurrence
+            dp[i] = (dp[i] - dp[prev - 1] + MOD) % MOD;
+        }
+
+        last[c] = i;
+    }
+
+    return dp[n];
+}
+
+int LCS3R(string s1, int i1, string s2, int i2, string s3, int i3,
+                                    vector<vector<vector<int>>>& dp){
+    if (i1 < 0 or i2 < 0 or i3 < 0) return 0;
+
+    if (dp[i1][i2][i3] != -1) {
+        return dp[i1][i2][i3];
+    }
+
+    int res1 = 0, res2, res3, res4;
+
+    if (s1[i1] == s2[i2] and s2[i2] == s3[i3]){
+        res1 = 1 + LCS3R(s1, i1 - 1, s2, i2 - 1, s3, i3 - 1, dp);
+    }
+
+    res2 = LCS3R(s1, i1 - 1, s2, i2, s3, i3, dp);
+    res3 = LCS3R(s1, i1, s2, i2 - 1, s3, i3, dp);
+    res4 = LCS3R(s1, i1, s2, i2, s3, i3 - 1, dp);
+
+    return dp[i1][i2][i3] = max(max(res1, res2), max(res3, res4));
+}
+int LCS3(string s1, string s2, string s3){
+    int n1 = s1.length();
+    int n2 = s2.length();
+    int n3 = s3.length();
+
+    vector<vector<vector<int>>> dp(
+        n1,
+        vector<vector<int>>(
+            n2, 
+            vector<int>(
+                n3, -1
+            )
+        )
+    );
+
+    return LCS3R(s1, n1 - 1, s2, n2 - 1, s3, n3 - 1, dp);
+}
+
+void CntOfLISR(vector<int> vec, int idx, int prev, map<int, int>& Idx2Val, int sz){
+    // base case
+    int n = vec.size();
+    if (idx == n){
+        Idx2Val[sz]++;
+        return;
+    }
+    int res1 = 0, res2;
+    if (prev == -1 or vec[idx] > vec[prev]){
+        CntOfLISR(vec, idx + 1, idx, Idx2Val, sz + 1);
+    }
+
+    CntOfLISR(vec, idx + 1, prev, Idx2Val, sz);
+}
+int CntOfLIS(vector<int> vec){
+    int n = vec.size();
+    map<int, int> Idx2Val;
+    int sz = 0;
+
+    CntOfLISR(vec, 0, -1, Idx2Val, sz);
+
+    int maxKey;
+    if (!Idx2Val.empty()){
+        maxKey = Idx2Val.begin()->second; // or .rbegin()->first;
+        return Idx2Val[maxKey];
+    }
+    return 0;
+}
+
+bool isAP(vector<int> v){
+    int n = v.size();
+
+    if (n <= 2) return true;
+
+    int diff = v[1] - v[0];
+    for (int i = 2; i < n; i++){
+        if (v[i] - v[i - 1] != diff) return false;
+    }
+    return true;
+}
+void LongestArithmeticR(vector<int> vec, int idx, vector<vector<int>>& vecStr, vector<int> tmp){
+    int n = vec.size();
+    if (idx >= n){
+        if (isAP(tmp)) {
+            vecStr.push_back(tmp);
+        }
+        return;
+    }
+
+    // not take
+    LongestArithmeticR(vec, idx + 1, vecStr, tmp);
+
+    // take
+    tmp.push_back(vec[idx]);
+    LongestArithmeticR(vec, idx + 1, vecStr, tmp);
+}
+int LongestArithmetic(vector<int> vec){
+
+    vector<vector<int>> vecStr;
+    vector<int> tmp;
+    LongestArithmeticR(vec, 0, vecStr, tmp);
+
+    int maxx = 0;
+    for (auto& a : vecStr){
+        int sz = a.size();
+        maxx = max(sz, maxx);
+    }
+
+    return maxx;
+}
+
+void LongestArithmetic1R(vector<int> vec, int idx, int prev, int diff, vector<vector<int>>& vecStr, vector<int> tmp, int sz_taken){
+    int n = vec.size();
+    if (idx == n){
+        vecStr.push_back(tmp);
+        return;
+    }
+
+    // don't take
+    LongestArithmetic1R(vec, idx + 1, prev, diff, vecStr, tmp, sz_taken);
+
+    // take
+    if (sz_taken <= 1 or vec[idx] - vec[prev] == diff){
+        tmp.push_back(vec[idx]);
+
+        // case only when one number is existed
+        if (sz_taken == 0) LongestArithmetic1R(vec, idx + 1, idx, -1, vecStr, tmp, sz_taken + 1);
+        // the first time to take diff
+        if (sz_taken == 1) LongestArithmetic1R(vec, idx + 1, idx, vec[idx] - vec[prev], vecStr, tmp, sz_taken + 1);
+        // diff is the same
+        else LongestArithmetic1R(vec, idx + 1, idx, diff, vecStr, tmp, sz_taken + 1);
+    }
+}
+int LongestArithmetic1(vector<int> vec){
+    vector<vector<int>> vecStr;
+    vector<int> tmp;
+    LongestArithmetic1R(vec, 0, -1, -1, vecStr, tmp, 0);
+
+    //Print(vecStr);
+    int maxx = 0;
+    for (auto& a : vecStr){
+        int sz = a.size();
+        maxx = max(sz, maxx);
+    }
+
+    return maxx;
+}
+
+/*
+    lis_table and lds_table here start from the current idx
+*/
+int LongestBitonic1(vector<int> vec) {
+    int n = vec.size();
+
+    // ending idx of lis
+    vector<int> lis_table(n ,1);
+    for (int i = 1; i < n; i++){
+        for (int j = 0; j < i; j++){
+            if (vec[i] > vec[j]){
+                lis_table[i] = max(lis_table[i], lis_table[j] + 1);
+            }
+        }
+    }
+
+    // starting idx of lds
+    vector<int> lds_table(n ,1);
+    for (int i = n - 1; i >= 0; i--){
+        for (int j = n - 1; j > i; j--){
+            if (vec[i] > vec[j]){
+                lds_table[i] = max(lds_table[i], lds_table[j] + 1);
+            }
+        }
+    }
+
+    Print(lis_table);
+    Print(lds_table);
+
+    int maxx = 0;
+    for (int i = 1; i < n - 1; i++){
+        maxx = max(maxx, lis_table[i] + lds_table[i] - 1);
+    }
+
+    return maxx;
 }
 
 int main(){
