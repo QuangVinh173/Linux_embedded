@@ -807,6 +807,336 @@ int LongestBitonic1(vector<int> vec) {
     return maxx;
 }
 
+// 5/10
+int AlternatingSubseqR(vector<int> vec, int idx, bool inc, vector<vector<int>>& dp){
+    int n = vec.size();
+    if (idx == n - 1) {
+        return 1;
+    }
+ 
+    if (dp[idx][inc] != -1){
+        printf("->%d\n", idx);
+        return dp[idx][inc];
+    }
+ 
+    int res = 0;
+    int maxx = 0;
+    if (inc == true){
+        for (int i = idx + 1; i < n; i++){
+            if (vec[idx] < vec[i]){
+                res = 1 + AlternatingSubseqR(vec, i, !inc, dp);
+                maxx = max(maxx, res);
+            }
+        }
+    }
+    else {
+        for (int i = idx + 1; i < n; i++){
+            if (vec[idx] > vec[i]){
+                res = 1 + AlternatingSubseqR(vec, i, !inc, dp);
+                maxx = max(maxx, res);
+            }
+        }      
+    }
+ 
+    return dp[idx][inc] = maxx;
+}
+int AlternatingSubseq(vector<int> vec){
+    int n = vec.size();
+ 
+    if (n <= 2) return 0;
+ 
+    vector<vector<int>> dp(n, vector<int>(2, -1));
+ 
+    int upfirst, downfirst;
+    int maxx = 0;
+    for (int i = 0; i < n; i++){
+        upfirst = AlternatingSubseqR(vec, i, true, dp);
+        downfirst = AlternatingSubseqR(vec, i, false, dp);
+ 
+        //printf("%d %d\n", upfirst, downfirst);
+        maxx = max(maxx, max(upfirst, downfirst));
+    }
+ 
+    if (maxx <= 2) return 0;
+ 
+    return maxx;
+}
+ 
+int AlternatingSubseq1R(vector<int> vec, int idx, int prev, bool inc, vector<vector<vector<int>>>& dp){
+    int n = vec.size();
+    if (idx == n){
+        return 0;
+    }
+ 
+    if (dp[idx][prev+1][inc] != -1){
+        printf("##\n");
+        return dp[idx][prev+1][inc];
+    }
+ 
+    int maxx = 0;
+    // always take when when prev = -1
+    if (prev == -1){
+        int in = 0;
+        in = 1 + AlternatingSubseq1R(vec, idx + 1, idx, inc, dp);
+ 
+        maxx = in;
+    }
+    else {
+        int in = 0, ex;
+        if (inc == true){
+            if (vec[prev] < vec[idx]){
+                in = 1 + AlternatingSubseq1R(vec, idx + 1, idx, !inc, dp);
+            }
+            ex = AlternatingSubseq1R(vec, idx + 1, prev, inc, dp);
+        }
+        else {
+            if (vec[prev] > vec[idx]){
+                in = 1 + AlternatingSubseq1R(vec, idx + 1, idx, !inc, dp);
+            }
+            ex = AlternatingSubseq1R(vec, idx + 1, prev, inc, dp);
+        }
+ 
+        maxx = max(in, ex);
+    }
+ 
+    return dp[idx][prev+1][inc] = maxx;
+}
+int AlternatingSubseq1(vector<int> vec){
+    int n = vec.size();
+ 
+    if (n <= 2) return 0;
+ 
+    vector<vector<vector<int>>> dp(
+        n, vector<vector<int>>(
+            n + 1, vector<int>(
+                2, -1
+            )
+        )
+    );
+    int upfirst = AlternatingSubseq1R(vec, 0, -1, true, dp);
+    int downfirst = AlternatingSubseq1R(vec, 0, -1, false, dp);
+ 
+    int res = max(upfirst, downfirst);
+ 
+    if (res <= 2) return 0;
+    return res;
+}
+
+// 6/10
+int ParenthesizationR(string s, int start_idx, int sz, bool ret, vector<vector<vector<int>>>& dp){
+    // base case
+    if (sz == 1){
+        if (ret == true) {
+            if (s[start_idx] == 'T') return 1;
+            else return 0;
+        }
+        else {
+            if (s[start_idx] == 'F') return 1;
+            else return 0;  
+        }
+    }
+ 
+    if (dp[start_idx][sz][ret] != -1){
+        printf("##\n");
+        return dp[start_idx][sz][ret];
+    }
+ 
+    int res = 0;
+    int res_l_T = 0, res_r_T = 0;
+    int res_l_F = 0, res_r_F = 0;
+    for (int i = start_idx; i < start_idx + sz - 2; i += 2){
+        res_l_T = ParenthesizationR(s, start_idx, i - start_idx + 1, true, dp);
+        res_r_T = ParenthesizationR(s, i+2, start_idx + sz - (i + 2), true, dp);
+ 
+        res_l_F = ParenthesizationR(s, start_idx, i - start_idx + 1, false, dp);
+        res_r_F = ParenthesizationR(s, i+2, start_idx + sz - (i + 2), false, dp);
+ 
+        if (ret == true){
+            if (s[i+1] == '&'){
+                res += res_l_T*res_r_T;
+            }
+            else if (s[i+1] == '|'){
+                res += res_l_T*res_r_T;
+                res += res_l_T*res_r_F;
+                res += res_l_F*res_r_T;
+            }
+            else if (s[i+1] == '^'){
+                res += res_l_T*res_r_F;
+                res += res_l_F*res_r_T;
+            }
+        }
+        else {
+            if (s[i+1] == '&'){
+                res += res_l_T*res_r_F;
+                res += res_l_F*res_r_T;
+                res += res_l_F*res_r_F;
+            }
+            else if (s[i+1] == '|'){
+                res += res_l_F*res_r_F;
+            }
+            else if (s[i+1] == '^'){
+                res += res_l_T*res_r_T;
+                res += res_l_F*res_r_F;
+            }          
+        }
+    }
+ 
+    return dp[start_idx][sz][ret] = res;
+}
+int Parenthesization(string s){
+    int n = s.size();
+ 
+    int res = 0;
+    int res_l_T = 0, res_r_T = 0;
+    int res_l_F = 0, res_r_F = 0;
+    bool ret;
+ 
+    if (n == 1){
+        if (s[0] == 'T') return 1;
+        else return 0;
+    }
+ 
+    vector<vector<vector<int>>> dp(
+        n, vector<vector<int>>(
+            n + 1, vector<int>(
+                2, -1
+            )
+        ));
+ 
+    return ParenthesizationR(s, 0, n, true, dp);
+}
+ 
+bool CheckPalindrome(string s, int i, int j){
+    if (i == j) return true;
+    while(i <= j and s[i] == s[j]){
+        i++;
+        j--;
+    }
+ 
+    if (i <= j) return false;
+    else return true;
+}
+int MinCutPalindromeR(string& s, int idx, int sz, vector<vector<int>>& dp){
+    int n = s.length();
+    //printf("%d, %d\n", idx, sz);
+ 
+    if (sz <= 1) return 0;
+ 
+    if (dp[idx][sz] != -1) {
+        printf("%d, %d\n", idx, sz);
+        return dp[idx][sz];
+    }
+ 
+    int end = idx + sz - 1;
+    if (CheckPalindrome(s, idx, end)) {
+        return dp[idx][sz] = 0;
+    }
+ 
+    int res_l = 0, res_r = 0;
+    int res = 0;
+    int minn = INT_MAX;
+    for (int i = idx + 1; i < idx + sz; i++){
+ 
+        int leftSize, rightSize;
+        // sz
+        leftSize = i - idx;
+        rightSize = end - i + 1;
+ 
+        res_l = MinCutPalindromeR(s, idx, leftSize, dp);
+        res_r = MinCutPalindromeR(s, i, rightSize, dp);
+ 
+        res = 1 + res_l + res_r;
+       
+        // if (idx == 0 and sz == 3) {
+        //     printf("idx[%d,%d] -> sz[%d,%d] -> %d\n", idx, idx + leftSize - 1, idx, leftSize, res_l);
+        //     printf("idx[%d,%d] -> sz[%d,%d] -> %d\n", i, i + rightSize - 1, i, rightSize, res_r);
+        //     printf("res[%d] = %d\n=====\n", idx, res);
+        // }
+ 
+        // if (idx == 1 and sz == 3) {
+        //     printf("[%d,%d] -> [%d,%d] -> %d\n", idx, idx + leftSize - 1, idx, leftSize, res_l);
+        //     printf("[%d,%d] -> [%d,%d] -> %d\n", i, i + rightSize - 1, i, rightSize, res_r);
+        //     printf("res[%d] = %d\n=====\n", idx, res);
+        // }
+ 
+        minn = min(res, minn);
+    }
+ 
+    return dp[idx][sz] = minn;
+}
+int MinCutPalindrome(string& s){
+    int n = s.length();
+    if (CheckPalindrome(s,0, n - 1)) return 0;
+ 
+    vector<vector<int>> dp(n, vector<int>(n + 1, -1));
+    return MinCutPalindromeR(s, 0, n, dp);
+}
+
+int DoubleKnapsackR(vector<int>& vec, int idx, int cap1, int cap2){
+    if (idx < 0){
+        return 0;
+    }
+
+    int not_take;
+    int take1 = 0, take2 = 0;
+    // dont take
+    not_take = DoubleKnapsackR(vec, idx - 1, cap1, cap2);
+
+    // take
+    if (cap1 >= vec[idx]) take1 = vec[idx] + DoubleKnapsackR(vec, idx - 1, cap1 - vec[idx], cap2);
+    if (cap2 >= vec[idx]) take2 = vec[idx] + DoubleKnapsackR(vec, idx - 1, cap1, cap2 - vec[idx]);
+
+    if (idx == 0) {
+        printf("%d, %d, %d\n", not_take, take1, take2);
+    }
+
+    return max(not_take, max(take1, take2));
+}
+int DoubleKnapsack(vector<int>& vec, int cap1, int cap2){
+    int n = vec.size();
+
+    return DoubleKnapsackR(vec, n - 1, cap1, cap2);
+}
+
+// 7/10
+int Permutation_KInversion(int n, int k){
+    if (k == 0) return 1;
+    if (k < 0) return 0;
+ 
+    int res = 0;
+    for (int i = 0; i < n; i++){
+        int tmp;
+        tmp = Permutation_KInversion(n - 1, k - i);
+        res += tmp;
+ 
+        // if (n == 3){
+        //     printf("[%d] = %d\n", i, tmp);
+        // }
+ 
+        /*
+            i = 0, the smallest num is permutating itself -> k = k - 0 = k -> k is the same, then recur with the n - 1
+            i = 1, the smallest num is permutating with the next -> k = k - 1 -> k is minus 1, then recur with the n - 1
+            i = 2, the smallest num is permutating with the next next -> k = k - 2 -> k is minus 2, then recur with the n - 1
+        */
+    }
+ 
+    return res;
+}
+
+int NumOfStairs123(int n){
+    // if (n <= 1) return n;
+    // if (n == 2) return n;
+    // if (n == 3) return 4;
+    if (n == 0) return 1;
+    if (n < 0) return 0;
+
+    int res1 = NumOfStairs123(n - 1);
+    int res2 = NumOfStairs123(n - 2);
+    int res3 = NumOfStairs123(n - 3);
+
+    return res1 + res2 + res3;
+}
+
 int main(){
     int res;
     bool ret;
