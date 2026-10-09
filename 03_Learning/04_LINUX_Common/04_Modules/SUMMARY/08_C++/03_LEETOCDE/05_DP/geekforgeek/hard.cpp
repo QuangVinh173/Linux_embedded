@@ -1137,6 +1137,286 @@ int NumOfStairs123(int n){
     return res1 + res2 + res3;
 }
 
+// 8/10
+int CntKOnesR(string s, int k, int idx){
+    if (idx < 0 or k < 0) return 0;
+ 
+ 
+    int res = 0;
+    if (s[idx] == '1'){
+        if (k == 1){
+            res += 1;
+        }
+        res += CntKOnesR(s, k - 1, idx - 1);
+ 
+    }
+    else {
+        if (k == 0){
+            res += 1;
+        }
+        res += CntKOnesR(s, k, idx - 1);
+    }
+ 
+    return res;
+}
+int CntKOnes(string s, int k){
+    int n = s.length();
+ 
+    int res = 0;
+    for (int i = 0; i < n; i++){
+        res += CntKOnesR(s, k, i);
+ 
+        printf("[%d] = %d\n", i, res);
+    }
+ 
+    return res;
+}
+ 
+    /*
+                         100101
+        prefix[] =       111223
+        freq[] =         1321
+ 
+                         0100101
+        prefix[] =       0111223
+        freq[] =         2321
+       
+        * 2321
+         + 2 -> "01"
+         + 3 -> "001"
+         + 2 -> "01"
+ 
+        * If CountOf1s == 2 -> res = freq_prefix_1one[0] -> 1 + 001
+                                                         -> 01 + 001
+    */
+int CntKOnes1(string &s, int k){
+    int n = s.length();
+ 
+    int CountOf1s = 0;
+ 
+    // max size of freq
+    vector<int> freq_prefix_1one(n, 0);
+    freq_prefix_1one[0] = 1;
+    int res = 0;
+    for (int i = 0; i < n; i++){
+        if (s[i] == '1') CountOf1s++;
+ 
+        if (CountOf1s >= k){
+            res += freq_prefix_1one[CountOf1s - k];
+        }
+ 
+        freq_prefix_1one[CountOf1s]++;
+    }
+ 
+    Print(freq_prefix_1one);
+ 
+    return res;
+}
+ 
+int findTargetSumWaysR(vector<int>& nums, int target, int idx){
+    int n = nums.size();
+    if (idx == n){
+        if (target == 0) return 1;
+        else return 0;
+    }
+ 
+    // +num
+    int res1 = findTargetSumWaysR(nums, target - nums[idx], idx + 1);
+ 
+    // -num
+    int res2 = findTargetSumWaysR(nums, target + nums[idx], idx + 1);
+ 
+    return res1 + res2;
+}
+int findTargetSumWays(vector<int>& nums, int target){
+    return findTargetSumWaysR(nums, target, 0);
+}
+
+// 9/10
+int numMusicPlaylistsR(int n, int n_remaining, vector<int>& freq, int goal, int k){
+ 
+    if (goal == 0){
+        if (n_remaining == 0) return 1;
+        else return 0;
+    }
+ 
+    int op1 = 0, op2 = 0;
+    for (int i = 1; i <= n; i++){
+ 
+        // op1: take the old
+        if (freq[i] >= k){
+            auto nextState = freq;
+ 
+            // reset to 0
+            nextState[i] = 0;
+ 
+            // increment freq for the other used
+            for (int j = 1; j <= n; j++){
+                if (j != i and nextState[j] != -1){
+                    nextState[j]++;
+                }
+            }
+ 
+            op1 += numMusicPlaylistsR(n, n_remaining, nextState, goal - 1, k);
+        }
+ 
+        // op2: take the new
+        if (freq[i] == -1){
+            auto nextState = freq;
+ 
+            // set 0 to used
+            nextState[i] = 0;
+ 
+            // increment freq for the other used
+            for (int j = 1; j <= n; j++){
+                if (j != i and nextState[j] != -1){
+                    nextState[j]++;
+                }
+            }
+ 
+            op2 += numMusicPlaylistsR(n, n_remaining - 1, nextState, goal - 1, k);
+        }
+    }
+ 
+    return op1 + op2;
+}
+int numMusicPlaylists(int n, int goal, int k){
+ 
+    int song = 0;
+    vector<int> freq(n+1, -1);
+    for (int i = 1; i <= n; i++){
+        freq[i] = -1;
+    }
+    return numMusicPlaylistsR(n, n, freq, goal, k);
+}
+ 
+int numMusicPlaylistsR1(int n, int g, int k, int SongUsed){
+    int NewSongChoices = n - SongUsed;
+    int OldSongChoices = SongUsed - k;
+
+    if (g == 0) {
+        if (NewSongChoices == 0) return 1;
+        else return 0;
+    }
+
+    int ways = 0;
+    // op1: take new song
+    if (NewSongChoices > 0){
+        ways += NewSongChoices*numMusicPlaylistsR1(n, g - 1, k, SongUsed + 1);
+    }
+    // op2: take old song
+    if (OldSongChoices > 0){
+        ways += OldSongChoices*numMusicPlaylistsR1(n, g - 1, k, SongUsed);
+    }
+
+    return ways;
+}
+int numMusicPlaylists1(int n, int g, int k){
+
+    int SongUsed = 0;
+    return numMusicPlaylistsR1(n, g, k, SongUsed);
+}
+
+int dieSimulatorR(int n, int n_remaining, vector<int>& rollMax, vector<int>& Num2RollMax, string tmp){
+    if (n_remaining == 0){
+       cout << tmp << endl;
+        return 1;
+    }
+ 
+    int op1 = 0, op2 = 0;
+ 
+    // op1: take new
+    for (int i = 1; i <= 6; i++){
+        if (Num2RollMax[i] == -1){
+            auto nextState = Num2RollMax;
+ 
+            // set 1 for first use
+            nextState[i] = 1;
+ 
+            // cooldown to 0 for the others
+            for (int j = 1; j <= 6; j++){
+                if (j != i and nextState[j] != -1){
+                    nextState[j] = 0;
+                }
+            }
+ 
+            int val;
+            tmp += to_string(i);
+            val = dieSimulatorR(n, n_remaining - 1, rollMax, nextState, tmp);
+            op1 += val;
+ 
+            //printf("[%d,%d] -> %d\n", n_remaining, i, val);
+            tmp.pop_back();
+        }
+    }
+ 
+    // op2: take the old
+    for (int i = 1; i <= 6; i++){
+        if (Num2RollMax[i] >= 0 and Num2RollMax[i] < rollMax[i-1]){
+            auto nextState = Num2RollMax;
+ 
+            // increment the freq
+            nextState[i]++;
+ 
+            // cooldown to 0 for the others
+            for (int j = 1; j <= 6; j++){
+                if (j != i and nextState[j] != -1){
+                    nextState[j] = 0;
+                }
+            }
+ 
+            int val;
+            tmp += to_string(i);
+            val = dieSimulatorR(n, n_remaining - 1, rollMax, nextState, tmp);
+            op2 += val;
+ 
+            //printf("[%d,%d] -> %d\n", n_remaining, i, val);
+            tmp.pop_back();
+        }
+    }
+ 
+    return op1 + op2;
+}
+int dieSimulator(int n, vector<int>& rollMax){
+ 
+    //vector<vector<int>> dp();
+    vector<int> Num2RollMax(6 + 1, -1);
+    for (int i = 1; i <= 6; i++){
+        Num2RollMax[i] = -1;
+    }
+    return dieSimulatorR(n, n, rollMax, Num2RollMax, "");
+}
+
+int dieSimulator1R(int n, vector<int>& rollMax, int last_face, int streak){
+    if (n == 0){
+        return 1;
+    }
+
+    int ways = 0;
+    for (int i = 1; i <= 6; i++){
+        // op1: take old
+        if (i == last_face){
+            if (streak < rollMax[i-1]){
+                ways += dieSimulator1R(n - 1, rollMax, i, streak + 1);
+            }
+        } 
+
+        // op2: take new
+        else {
+            /* streak must be reset to 1 for new last face */
+            ways += dieSimulator1R(n - 1, rollMax, i, 1);
+        }
+    }
+
+    return ways;
+}
+int dieSimulator1(int n, vector<int>& rollMax){
+
+    int face = 0;
+    int streak = 0;
+    return dieSimulator1R(n, rollMax, face, streak);
+}
+
 int main(){
     int res;
     bool ret;
