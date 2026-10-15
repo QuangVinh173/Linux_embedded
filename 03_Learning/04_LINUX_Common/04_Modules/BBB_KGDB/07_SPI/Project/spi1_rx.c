@@ -75,11 +75,18 @@
 #define MCSPI_CHSTAT_RX0_FULL BIT(2)  // RX0 full interrupt
 #define MCSPI_CHSTAT_RX0_OVERFLOW BIT(3)  // RX0 overflow interrupt
 #define MCSPI_CHSTAT_EOWKE BIT(17)  
+
+#define MCSPI_CHSTAT_RXFFE   BIT(5)          /* RX FIFO empty */
+#define MCSPI_IRQ_RX0_FULL   BIT(2)
+#define MCSPI_IRQ_RX0_OVF    BIT(3)
+#define RX_IRQ_MASK          (MCSPI_IRQ_RX0_FULL | MCSPI_IRQ_RX0_OVF)
+#define RX_DRAIN_MAX         64              /* max FIFO depth on AM335x, safety bound */
  
 // Receive interval for logging (2 seconds)
 #define SPI_RECV_INTERVAL (2 * HZ)
 #define MS_DELAY 3000 // increarw the time from 2000 to 3000 to make sure the completion of DMA received data
- 
+#define FIFO_USED 1 
+
 struct spi_device_data {
     dev_t dev_num;
     struct cdev cdev;
@@ -92,11 +99,9 @@ struct spi_device_data {
     struct task_struct *recv_thread;
     wait_queue_head_t recv_wait;
     u8 rx_buffer[256];  // Buffer for received data
-    size_t rx_count;    // Number of bytes received
     bool data_ready;    // Flag for new data
  
     u8 index;
-    u8 jump_num;
     u8 is_get_count;
  
     /* DMA-related fields */
@@ -110,6 +115,9 @@ struct spi_device_data {
  
     struct bbb_spi_config cfg;
     bool done_configured;
+
+    spinlock_t   lock;          /* NEW: protects rx_buffer/index/count/flags */
+    //unsigned int index;         /* was u8 → wrapped at 256 */
 };
  
 /* Declaration */
@@ -161,7 +169,7 @@ void spi_hw_init(struct spi_device_data* data, struct bbb_spi_config* config){
     chconf |= MCSPI_CHCONF_EPOL; // Active-low CS
     chconf |= MCSPI_CHCONF_TRM_RX_ONLY; // Receive-only mode
  
-    chconf |= 1u << 28; // The FIFO buffer is used to receive data.
+    chconf |= FIFO_USED << 28; // The FIFO buffer is used to receive data.
  
     iowrite32(chconf, data->base + MCSPI_CHCONF0);
  
@@ -173,13 +181,33 @@ void spi_hw_init(struct spi_device_data* data, struct bbb_spi_config* config){
  
     // Enable RX0_FULL interrupt
     iowrite32(0x2444C, data->base + MCSPI_IRQENABLE);
+
+    // ioread32(data->base + MCSPI_RX0);
+    // ioread32(data->base + MCSPI_RX0);
+    // ioread32(data->base + MCSPI_RX0);
+    // ioread32(data->base + MCSPI_RX0);
 }
  
 void spi_hw_deinit(struct spi_device_data* data){
+    iowrite32(0, data->base + MCSPI_MODULCTRL);
+
+    iowrite32(0, data->base + MCSPI_IRQENABLE);
+
     iowrite32(0, data->base + MCSPI_CHCONF0); // clear cfg
+
+    // u32 chconf = ioread32(data->base + MCSPI_CHCONF0);
  
+    // chconf &= ~(MCSPI_CHCONF_FORCE | BIT(14) | BIT(15));   /* CS released, no DMA req */
+    // iowrite32(chconf, data->base + MCSPI_CHCONF0);         /* EPOL/POL/PHA unchanged */
+ 
+
+
+    
     // Disable the SPI channel
     iowrite32(0, data->base + MCSPI_CHCTRL0);
+
+    // software resets
+    iowrite32(1<<1, data->base + MCSPI_SYSCONFIG);
  
     //dev_info(data->dev, "ch0ststus = 0x%x\n", ioread32(data->base + MCSPI_CHSTAT0));
 }
@@ -194,104 +222,109 @@ static void re_request_irq_work(struct work_struct *work)
 static irqreturn_t irqHandler(int irq, void *d)
 {
     struct spi_device_data *data = d;
-    u32 irqsts, sta;
-    u32 ch0cfg;
-    unsigned long timeout;
+    u32 irqsts;
+    int n;
  
-    irqsts = ioread32(data->base + MCSPI_IRQSTATUS);
-    sta = ioread32(data->base + MCSPI_CHSTAT0);
-    printk("irqsts -> 0x%x, sta = 0x%x\n", irqsts, sta);
- 
-    if (irqsts & MCSPI_CHSTAT_RX0_FULL && data->done_configured == true) {
- 
-// #if (!DMA_USED_RX)
-        if (!data->cfg.use_dma){
-            if (data->is_get_count == 0){
-                data->count = ioread32(data->base + MCSPI_RX0);
-                data->is_get_count = 1;
-#if (PRINT_DEBUG_RX)
-            printk("CPU->count = %d\n", data->count);
+    irqsts = ioread32(data->base + MCSPI_IRQSTATUS) & RX_IRQ_MASK;
+    if (!irqsts)
+        return IRQ_NONE;
 
-            // iowrite32(MCSPI_CHSTAT_RX0_FULL, data->base + MCSPI_IRQSTATUS);
+    dev_warn_ratelimited(data->dev, "1. irqsts = 0x%x\n", irqsts);
+ 
+#if (!BUG_ONE_BYTE_RECEIVED)
+    /* Clear BEFORE draining: a byte that arrives during the drain
+     * sets the flag again, so a new IRQ fires and nothing is lost. */
+    iowrite32(irqsts, data->base + MCSPI_IRQSTATUS);
+#endif
 
-            if (data->cfg.FIFO_trigger > 1){
-                timeout = jiffies + msecs_to_jiffies(3000);
-                // use drain FIFO to read data
-                do {
-                    if (ioread32(data->base + MCSPI_CHSTAT0) & MCSPI_CHSTAT_RXS) {
-                        data->rx_buffer[data->index++] = ioread32(data->base + MCSPI_RX0);
-                    }    
-    
-                    if (time_after(jiffies, timeout)) {
-                        dev_err(data->dev, "Timeout draining FIFO\n");
-                        break;
-                    }
-    
-                } while(data->rx_buffer[data->index-1] != 0x0a); // '\n'
-            }
-#endif /* PRINT_DEBUG_RX */
-            }
-            else {
-// #if (FIFO_DRAINED)
-            // timeout = jiffies + msecs_to_jiffies(3000);
-            // // use drain FIFO to read data
-            // do {
-            //     if (ioread32(data->base + MCSPI_CHSTAT0) & MCSPI_CHSTAT_RXS) {
-            //         data->rx_buffer[data->index++] = ioread32(data->base + MCSPI_RX0);
-            //     }    
+    if (!data->done_configured)
+        return IRQ_HANDLED;
  
-            //     if (time_after(jiffies, timeout)) {
-            //         dev_err(data->dev, "Timeout draining FIFO\n");
-            //         break;
-            //     }
+    if (irqsts & MCSPI_IRQ_RX0_OVF)
+        dev_warn_ratelimited(data->dev, "RX0 overflow\n");
  
-            // } while(data->rx_buffer[data->index-1] != 0x0a); // '\n'
+    if (!(irqsts & MCSPI_IRQ_RX0_FULL))
+        return IRQ_HANDLED;
  
-            // data->is_get_count = 0;
-            // spi_hw_init(data, &data->cfg);
+    spin_lock(&data->lock);
  
-//             dev_info(data->dev, "[CPU] DMA read is done -> /dev/spi1\n");
-// #else
-            if (ioread32(data->base + MCSPI_CHSTAT0) & MCSPI_CHSTAT_RXS) {
-                data->rx_buffer[data->index++] = ioread32(data->base + MCSPI_RX0);
-            }  
-// #endif /* FIFO_DRAINED */
-            // spi_hw_init(data, &data->cfg);
- 
-        }
-// #else
-        }
-        else {
-            
-            data->count = ioread32(data->base + MCSPI_RX0);
-            printk("DMA->count = %d\n", data->count);
-            iowrite32(MCSPI_CHSTAT_RX0_FULL | MCSPI_CHSTAT_EOWKE, data->base + MCSPI_IRQSTATUS);
- 
-            // disable all interrupt
-            iowrite32(0, data->base + MCSPI_IRQENABLE);
- 
-            // ch0cfg = ioread32(data->base + MCSPI_CHCONF0);
-            // ch0cfg |= 1u << 15; // DMA request read;
-            // iowrite32(ch0cfg, data->base + MCSPI_CHCONF0);
- 
-            schedule_work(&data->re_request_work);
-        }
-// #endif /* DMA_USED_RX */
- 
-        // Clear RX1_FULL interrupt
-        iowrite32(MCSPI_CHSTAT_RX0_FULL, data->base + MCSPI_IRQSTATUS);
-    }
-    else if (irqsts & MCSPI_CHSTAT_RX0_OVERFLOW) {
-        // Clear RX1_FULL interrupt
-        iowrite32(MCSPI_CHSTAT_RX0_OVERFLOW, data->base + MCSPI_IRQSTATUS);      
-    }
-    else if ((irqsts & MCSPI_CHSTAT_EOWKE) == MCSPI_CHSTAT_EOWKE) {
-        // Clear RX1_FULL interrupt
-        iowrite32(MCSPI_CHSTAT_EOWKE, data->base + MCSPI_IRQSTATUS);      
+    if (data->cfg.use_dma) {
+        /* Length byte by CPU (completes the AFL = 1 window),
+         * payload by DMA in process context. */
+        data->count = ioread32(data->base + MCSPI_RX0) & 0xFF;
+        iowrite32(0, data->base + MCSPI_IRQENABLE);
+        spin_unlock(&data->lock);
+        schedule_work(&data->re_request_work);
+        return IRQ_HANDLED;
     }
  
-    data->jump_num++;
+#if (!BUG_ONE_BYTE_RECEIVED)
+    /* CPU mode: take only what is in the FIFO NOW. Never wait for more. */
+    for (n = 0; n < RX_DRAIN_MAX; n++) {
+        u8 b;
+        u32 sta;
+
+        // sta = ioread32(data->base + MCSPI_CHSTAT0);
+        // dev_warn_ratelimited(data->dev, "sta = 0x%x\n", sta);
+        // if (sta & MCSPI_CHSTAT_RXFFE)
+        //     break;                                  /* FIFO empty → leave */
  
+        b = ioread32(data->base + MCSPI_RX0) & 0xFF;
+ 
+        if (data->data_ready) {                     /* previous frame not read yet */
+            dev_warn_ratelimited(data->dev, "frame not consumed, byte dropped\n");
+            //continue;                               /* still drain the FIFO */
+        }
+        sta = ioread32(data->base + MCSPI_CHSTAT0);
+        dev_warn_ratelimited(data->dev, "1.sta = 0x%x\n", sta);
+        dev_warn_ratelimited(data->dev, "irqsts = 0x%x, count = %d\n", irqsts, data->count);
+ 
+        if (!data->is_get_count) {                  /* 1st byte = length */
+            data->count = b;
+            data->is_get_count = 1;
+
+        } else {
+            data->rx_buffer[data->index++] = b;
+        }
+ 
+        if (data->is_get_count && data->index >= data->count) {
+            dev_warn_ratelimited(data->dev, "Data readyyy\n");
+            data->data_ready = true;                /* frame complete */
+            wake_up_interruptible(&data->recv_wait);
+        }
+
+        sta = ioread32(data->base + MCSPI_CHSTAT0);
+        dev_warn_ratelimited(data->dev, "2. sta = 0x%x\n", sta);
+        if (sta & MCSPI_CHSTAT_RXFFE)
+            break;    
+    }
+#else
+    if (irqsts & MCSPI_IRQ_RX0_FULL){
+        u8 b;
+        b = ioread32(data->base + MCSPI_RX0) & 0xFF;
+        if (!data->is_get_count) {                  /* 1st byte = length */
+            data->count = b;
+            data->is_get_count = 1;
+
+        } else {
+            data->rx_buffer[data->index++] = b;
+        } 
+
+        if (data->is_get_count && data->index >= data->count) {
+            dev_warn_ratelimited(data->dev, "Data readyyy\n");
+            data->data_ready = true;                /* frame complete */
+            wake_up_interruptible(&data->recv_wait);
+        }
+    }
+#endif
+
+#if (BUG_ONE_BYTE_RECEIVED)
+    /* Clear BEFORE draining: a byte that arrives during the drain
+     * sets the flag again, so a new IRQ fires and nothing is lost. */
+    iowrite32(irqsts, data->base + MCSPI_IRQSTATUS);
+#endif
+ 
+    spin_unlock(&data->lock);
     return IRQ_HANDLED;
 }
  
@@ -477,7 +510,7 @@ free_buf:
  
     kfree(kbuf);
 
-    ioread32(data->base + MCSPI_RX0);
+    //ioread32(data->base + MCSPI_RX0);
     //u32 irqsts = ioread32(data->base + MCSPI_IRQSTATUS);
     // //dev_info(data->dev, "XXX\n");
  
@@ -505,7 +538,10 @@ free_buf:
     //     }
     // }
 
-    ioread32(data->base + MCSPI_RX0);
+    data->data_ready = true;                /* frame complete */
+    wake_up_interruptible(&data->recv_wait);
+
+    //ioread32(data->base + MCSPI_RX0);
     iowrite32(MCSPI_CHSTAT_RX0_FULL, data->base + MCSPI_IRQSTATUS);
 
 
@@ -539,51 +575,55 @@ static int spi_device_release(struct inode *inode, struct file *filp)
     return 0;
 }
  
-static ssize_t spi_device_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+static ssize_t spi_device_read(struct file *filp, char __user *buf,
+                               size_t len, loff_t *f_pos)
 {
     struct spi_device_data *data = filp->private_data;
-#if (PRINT_DEBUG_RX)
+    u8 tmp[sizeof(data->rx_buffer)];
+    unsigned long flags;
+    unsigned int n;
+    long ret;
+
     int i;
-#endif
-    unsigned int bytes_read = 0;
-
-    // if (data->index != data->count){
-    //     printk("first idx = %d\n", data->index);
-    //     unsigned long long timeout = jiffies + msecs_to_jiffies(3000);
-    //     // use drain FIFO to read data
-    //     do {
-    //         if (ioread32(data->base + MCSPI_CHSTAT0) & MCSPI_CHSTAT_RXS) {
-    //             data->rx_buffer[data->index++] = ioread32(data->base + MCSPI_RX0);
-    //         }    
-
-    //         if (time_after(jiffies, timeout)) {
-    //             dev_err(data->dev, "Timeout draining FIFO\n");
-    //             break;
-    //         }
-
-    //     } while(data->rx_buffer[data->index-1] != 0x0a); // '\n'
+    // for (i = 0; i < data->index; i++){
+    //     dev_info(data->dev, "[%d]-> '%c'\n", i, data->rx_buffer[i]);
     // }
- 
-    // copy_to_user will print the buf in the terminal
-    if (copy_to_user(buf, data->rx_buffer, data->index)) {
-        return -EFAULT;
+
+    printk("RX: %*ph\n", data->index, data->rx_buffer);
+
+#if (BUG_STRAY_BIT)
+    char ori[100];
+    for (i = 0; i < data->index; i++){
+        // dev_info(data->dev, "[%d]-> '%c'\n", i, data->rx_buffer[i]);
+        ori[i] = (u8)(data->rx_buffer[i] << 1 | data->rx_buffer[i + 1] >> 7);
     }
 
-#if (PRINT_DEBUG_RX)
-    // used for reading data in non-DMA mode
-    for (i = 0; i < data->index; i++){
-        dev_info(data->dev, "[%d]-> '%c'\n", i, data->rx_buffer[i]);
-    }
+    printk("ori: %*ph\n", data->index, ori);
 #endif
+
+    /* Sleeps; IRQs are enabled here, so jiffies advances and the timeout works */
+    /* Or wait_event_timeout if don't use Ctrl+C -> stop a process blocked in read() until the timeout ended */
+    /* If spi_device_read is called during transfer (data->data_ready == false), it blocks */
+    /* The condition is only re-evaluated after a wake-up */
+    ret = wait_event_interruptible_timeout(data->recv_wait, data->data_ready,
+                                           msecs_to_jiffies(3000));
+    if (ret == 0)
+        return -ETIMEDOUT;
+    if (ret < 0)
+        return ret;                                 /* signal */
  
-    bytes_read = data->index;
- 
-    // back up
-    data->index = 0;
+    spin_lock_irqsave(&data->lock, flags);
+    n = min_t(unsigned int, data->index, len);
+    memcpy(tmp, data->rx_buffer, n);
+    data->index        = 0;                         /* ready for next frame */
     data->is_get_count = 0;
+    data->data_ready   = false;
+    spin_unlock_irqrestore(&data->lock, flags);
  
-    printk("-> %d\n", data->index);
-    return bytes_read;
+    /* copy_to_user can sleep → must be outside the spinlock */
+    if (copy_to_user(buf, tmp, n))
+        return -EFAULT;
+    return n;
 }
  
 static long spi_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
@@ -603,6 +643,12 @@ static long spi_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
         /*
          * Apply the configuration to the SPI hardware.
          */
+        //memcpy(tmp, data->rx_buffer, n);
+        spi->index        = 0;                         /* ready for next frame */
+        spi->is_get_count = 0;
+        spi->data_ready   = false;
+        spi->done_configured = false;
+
         spi->cfg.FIFO_trigger = config.FIFO_trigger;
         spi_hw_init(spi, &config);
         spi->cfg.use_dma = config.use_dma;
@@ -644,7 +690,6 @@ static int spi_device_probe(struct platform_device *pdev)
     platform_set_drvdata(pdev, data);
  
     data->index = 0;
-    data->jump_num = 0;
     data->is_get_count = 0;
  
     // Map SPI controller registers
@@ -676,6 +721,10 @@ static int spi_device_probe(struct platform_device *pdev)
     // // hw init using registers
     // spi_hw_init(data);
     data->done_configured = false;
+
+    spin_lock_init(&data->lock);
+    init_waitqueue_head(&data->recv_wait);
+    data->data_ready = false;
  
     // ========== Request IRQ (hwirq 125 for SPI1 on AM33xx) ==========
     data->irq = platform_get_irq(pdev, 0);

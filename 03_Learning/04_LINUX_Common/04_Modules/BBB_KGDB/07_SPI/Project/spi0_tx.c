@@ -21,7 +21,7 @@
 #define SLK 500000
  
 #define SPI0_BASE 0x48030000
- 
+
 // Register offsets for OMAP2 McSPI (corrected for AM33xx SPI0, base 0x48030000)
 #define MCSPI_CHCONF0   0x12c
 #define MCSPI_SYSCONFIG   0x110
@@ -111,6 +111,12 @@ void spi_hw_init(struct spi_device_data* data, struct bbb_spi_config* config){
  
     // Configure SPI controller (single-channel mode)
     iowrite32(MCSPI_MODULCTRL_SINGLE, data->base + MCSPI_MODULCTRL);
+
+#if (!BUG_STRAY_BIT)
+    /* Step 1: deselect the slave immediately (CS idle high) */
+    chconf = MCSPI_CHCONF_EPOL;
+    iowrite32(chconf, data->base + MCSPI_CHCONF0);
+#endif
  
     chconf = ioread32(data->base + MCSPI_CHCONF0);
     // Configure CHCONF0 for SPI0
@@ -172,11 +178,26 @@ void spi_hw_init(struct spi_device_data* data, struct bbb_spi_config* config){
 }
  
 void spi_hw_deinit(struct spi_device_data* data){
+
+#if (BUG_STRAY_BIT)
+    iowrite32(0, data->base + MCSPI_MODULCTRL);
+
+    iowrite32(0, data->base + MCSPI_IRQENABLE);
+
     iowrite32(0, data->base + MCSPI_CHCONF0); // clear cfg
+#else
+    u32 chconf = ioread32(data->base + MCSPI_CHCONF0);
+ 
+    chconf &= ~(MCSPI_CHCONF_FORCE | BIT(14) | BIT(15));   /* CS released, no DMA req */
+    iowrite32(chconf, data->base + MCSPI_CHCONF0);         /* EPOL/POL/PHA unchanged */
+#endif
+
  
     // Disable the SPI channel
     iowrite32(0, data->base + MCSPI_CHCTRL0);
  
+    // software resets
+    iowrite32(1<<1, data->base + MCSPI_SYSCONFIG);
     //dev_info(data->dev, "ch0ststus = 0x%x\n", ioread32(data->base + MCSPI_CHSTAT0));
 }
  
