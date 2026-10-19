@@ -282,3 +282,71 @@ RX: Chu and Han war200 Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + 
 ========== SUMMARY ==========
 PASS: 121/200
 FAIL: 79/200
+
+
+====
+
+kernel:
+[ 2446.554257] usb1_write -> count = 145
+[ 2446.557998] Sending OutData to Arduino
+[ 2450.114216] packet_len = 64
+[ 2450.117090] txcsr = 0x1a7
+[ 2450.119817] packet_len = 64
+[ 2450.122664] txcsr = 0xa7
+[ 2450.125216] packet_len = 17
+[ 2450.128046] txcsr = 0x1a7
+[ 2450.180546] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2450.185312] Reading IN BULK with ACKed!
+[ 2450.189243] => n = 7
+[ 2450.194352] RX_index = 7
+[ 2450.199385] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2450.204447] Reading IN BULK with ACKed!
+[ 2450.208387] => n = 0
+[ 2450.220814] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2450.225651] Reading IN BULK with ACKed!
+[ 2450.229598] => n = 48
+[ 2450.234307] RX_index = 48
+[ 2450.239821] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2450.244646] Reading IN BULK with ACKed!
+[ 2450.248594] => n = 64
+[ 2450.254324] RX_index = 64
+[ 2450.257841] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2450.262726] Reading IN BULK with ACKed!
+[ 2450.266640] => n = 23
+[ 2450.272533] RX_index = 23
+[ 2450.276073] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2450.280842] Reading IN BULK with ACKed!
+[ 2450.284732] => n = 5
+[ 2450.290409] RX_index = 5
+[ 2450.306274] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2450.310988] Reading IN BULK with ACKed!
+[ 2450.314922] => n = 0
+[ 2450.800270] usb1_write -> count = 145
+
+[ 2450.800270] usb1_write -> count = 145
+[ 2450.804059] Sending OutData to Arduino
+[ 2454.338243] packet_len = 64
+[ 2454.341117] txcsr = 0xa7
+[ 2454.343769] packet_len = 64
+[ 2454.346618] txcsr = 0x1a7
+[ 2454.349257] packet_len = 17
+[ 2454.352087] txcsr = 0xa7
+[ 2454.408011] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2454.412735] Reading IN BULK with ACKed!
+[ 2454.416670] => n = 45
+[ 2454.422350] RX_index = 45
+[ 2454.433209] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2454.438031] Reading IN BULK with ACKed!
+[ 2454.441959] => n = 0
+[ 2454.447974] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2454.452754] Reading IN BULK with ACKed!
+[ 2454.456694] => n = 48
+[ 2454.462394] RX_index = 48
+[ 2454.466954] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2454.471746] Reading IN BULK with ACKed!
+[ 2454.475689] => n = 54
+[ 2454.481329] RX_index = 54
+[ 2454.488277] usb1_class usb1: MUSB_RXCSR_FIFOFULL
+[ 2454.493140] Reading IN BULK with ACKed!
+[ 2454.497060] => n = 0
+
