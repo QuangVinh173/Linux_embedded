@@ -3,8 +3,8 @@
 #include <iostream>
 #include <string>
 
-#include <thread> // Required for std::this_thread::sleep_for
-#include <chrono> // Required for time units like std::chrono::milliseconds
+#include <thread>
+#include <chrono>
 
 int main()
 {
@@ -46,23 +46,31 @@ int main()
 
 
 
-    // int loops = 10;
-    // int passed = 0, failed = 0;
+    // constexpr int loops = 200;
+    // int passed = 0;
+    // int failed = 0;
+
     // for (int i = 0; i < loops; ++i) {
     //     const std::string tx =
-    //         "Chu and Han total war!!!!_" + std::to_string(i + 1);
+    //         "Chu and Han war + Chu and Han war + Chu and Han war + "
+    //         "Chu and Han war + Chu and Han war + Chu and Han war + "
+    //         "Chu and Han war!!!!_ times: " + std::to_string(i + 1);
+    //     const std::string packet = tx + "\n";
     //     std::string rx;
 
-    //     const std::string packet = tx + "\n";
+    //     std::cout << "[" << (i + 1) << "/" << loops << "] Sending command...\n";
 
     //     if (!usb.writeData(packet)) {
     //         ++failed;
+    //         std::cout << "**RESULT: FAIL (write) **\n===================\n";
+    //         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     //         continue;
     //     }
 
-    //     // Read immediately after write
     //     if (!usb.readData(rx, 3000)) {
     //         ++failed;
+    //         std::cout << "**RESULT: FAIL (read/timeout) **\n===================\n";
+    //         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     //         continue;
     //     }
 
@@ -70,14 +78,19 @@ int main()
     //         std::cout << "**RESULT: PASS**\n";
     //         ++passed;
     //     } else {
-    //         std::cout << "**RESULT: FAIL**\n";
+    //         std::cout << "**RESULT: FAIL (reply mismatch)**\n"
+    //                   << "TX: " << tx << '\n'
+    //                   << "RX: " << rx << '\n';
     //         ++failed;
     //     }
 
     //     std::cout << "===================\n";
-
-    //     rx.clear();
-
     //     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     // }
+
+    // std::cout << "\n========== SUMMARY ==========\n"
+    //           << "PASS: " << passed << '/' << loops << '\n'
+    //           << "FAIL: " << failed << '/' << loops << '\n';
+
+    // return (failed == 0) ? 0 : 1;
 }

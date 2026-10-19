@@ -14,6 +14,12 @@
 #include <linux/delay.h>
 #include "cdc_ioctl.h"
 
+#include <linux/kthread.h>
+#include <linux/kfifo.h>
+#include <linux/mutex.h>
+#include <linux/wait.h>
+#include <linux/poll.h>
+
 /* CONTROL */
 #define INDEX_USED 1
 
@@ -273,6 +279,11 @@
 #define USB_REQ_SET_SEL			0x30
 #define USB_REQ_SET_ISOCH_DELAY		0x31
 
+#define MUSB_RXCSR_H_NAKTIMEOUT  0x0008
+#define TXCSR_H_ERRS (MUSB_TXCSR_H_RXSTALL | MUSB_TXCSR_H_ERROR | MUSB_TXCSR_H_NAKTIMEOUT)
+#define RXCSR_H_ERRS (MUSB_RXCSR_H_RXSTALL | MUSB_RXCSR_H_ERROR)
+#define BULK_NAK_LIMIT 5          /* 2^(5-1) = 16 frames ≈ 16 ms at full speed */
+
 /* ================ Main structure ============== */
 struct usb_devRequest {
 	u8 bRequestType;
@@ -413,6 +424,15 @@ struct usb_device_data {
     bool full_speed;
     struct cdc_status status;
     struct cdc_info info;
+
+
+
+    struct task_struct *rx_task;
+    struct mutex        hw_lock;      /* INDEX + endpoint registers */
+    wait_queue_head_t   rx_wait;
+    wait_queue_head_t   irq_wait;
+    //wait_queue_head_t   irq_wait_reg;
+    DECLARE_KFIFO(rx_fifo, u8, 1024); /* size must be a power of 2 */
 };
 
 /* ================== Handler ====================*/
@@ -426,6 +446,7 @@ int wait_val_update(struct usb_device_data *data, u16 *var, u16 val, u16 delay_m
 void USB1_SetToken(struct usb_device_data *data, const u8* TokenSet);
 void USB1_ClrToken(struct usb_device_data *data);
 void USB1_ApplyToken(struct usb_device_data *data, u8 epnum);
+void USB1_SetupBulkFifos(struct usb_device_data *data, u8 ep_out, u8 ep_in);
 
 /* ================ Init funcs ============= */
 void USB1_reset(struct usb_device_data *data);
@@ -442,10 +463,14 @@ void USB1_Print_DeviceDescriptor(struct usb_device_data *data);
 void USB1_Print_DeviceDescriptor2(struct usb_device_data *data);
 void USB1_Print_DeviceDescriptorIf0(struct usb_device_data *data);
 
+void USB1_PrintCoreConfig(struct usb_device_data *data);
+
 /* ================== API for Bulk Transfer ===================== */  
 int USB1_OUT_Phase_Bulk(struct usb_device_data *data, u8 epnum, u8 addr, const u8* dataX, u32 len);
 int USB1_IN_Phase_Bulk(struct usb_device_data *data, u8 epnum, u8 addr, u8* dataX, u16* len);
 int USB1_IN_Phase_Bulk_init(struct usb_device_data *data, u8 epnum, u8 addr, u8* dataX, u16* len);
+
+int usb1_rx_thread(void *arg);
 #endif
 
 

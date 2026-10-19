@@ -89,7 +89,9 @@ static ssize_t usb1_write(struct file *filp, const char __user *buf, size_t coun
     data->RX_index = 0;
 
     printk("Sending OutData to Arduino\n");
+    mutex_lock(&data->hw_lock);
     ret = USB1_OUT_Phase_Bulk(data, epNum_bulk_out_addr, ARDUINO_DEVICE_ADDR, kbuf, count);
+    mutex_unlock(&data->hw_lock);
     if (ret < 0) {
         dev_info(data->dev, "Send error\n");
         return -1;
@@ -98,36 +100,57 @@ static ssize_t usb1_write(struct file *filp, const char __user *buf, size_t coun
 }
 
 static ssize_t usb1_read(struct file *filp, char __user *buf, size_t len, loff_t *f_pos){
+    // struct usb_device_data *data = filp->private_data;
+    // u16 InDataLen;
+    // u8 epNum_bulk_in_addr, in;
+    // int ret;
+
+    // if (!data->done_configured){
+    //     return -2;
+    // }
+
+    // /* First 4 bits are enpoint addr */
+    // epNum_bulk_in_addr = data->InsDeviceDescriptor.ep_bulk_in_bEndpointAddress & 0x0F;
+
+    // /* bit 7 is r/w */
+    // in = data->InsDeviceDescriptor.ep_bulk_in_bEndpointAddress & 0x80;
+    // if (!(in & 0x80)) {
+    //     printk("Invalid enpoint addr\n");
+    //     return -1;
+    // }
+
+    // ret = USB1_IN_Phase_Bulk(data, epNum_bulk_in_addr, ARDUINO_DEVICE_ADDR, data->RX, &InDataLen);
+    // if (ret < 0) return ret;
+
+    // print_arr(data->RX, InDataLen, "data->RX");
+
+    // data->RX_index = 0;
+
+    // if (copy_to_user(buf, data->RX, InDataLen))
+    //     return -EFAULT;
+
+    // return InDataLen;
+
+
+
     struct usb_device_data *data = filp->private_data;
-    u16 InDataLen;
-    u8 epNum_bulk_in_addr, in;
-    int ret;
-
-    if (!data->done_configured){
-        return -2;
-    }
-
-    /* First 4 bits are enpoint addr */
-    epNum_bulk_in_addr = data->InsDeviceDescriptor.ep_bulk_in_bEndpointAddress & 0x0F;
-
-    /* bit 7 is r/w */
-    in = data->InsDeviceDescriptor.ep_bulk_in_bEndpointAddress & 0x80;
-    if (!(in & 0x80)) {
-        printk("Invalid enpoint addr\n");
-        return -1;
-    }
-
-    ret = USB1_IN_Phase_Bulk(data, epNum_bulk_in_addr, ARDUINO_DEVICE_ADDR, data->RX, &InDataLen);
-    if (ret < 0) return ret;
-
-    print_arr(data->RX, InDataLen, "data->RX");
-
-    data->RX_index = 0;
-
-    if (copy_to_user(buf, data->RX, InDataLen))
-        return -EFAULT;
-
-    return InDataLen;
+    unsigned int copied;
+    long ret;
+ 
+    if (!data->done_configured)
+        return -ENODEV;
+ 
+    /* Sleep until the thread puts something in the kfifo */
+    ret = wait_event_interruptible_timeout(data->rx_wait,
+              !kfifo_is_empty(&data->rx_fifo) || !data->done_configured,
+              msecs_to_jiffies(3000));
+    if (ret == 0)  return -EAGAIN;          /* no data for 3 s */
+    if (ret < 0)   return ret;              /* signal (Ctrl+C) */
+    if (!data->done_configured) return -ENODEV;
+ 
+    /* Copy up to len bytes straight from the ring to user space */
+    ret = kfifo_to_user(&data->rx_fifo, buf, len, &copied);
+    return ret ? ret : copied;
 }
  
 static long usb1_ioctl(struct file *file,
@@ -195,6 +218,15 @@ static void descriptor_work_func(struct work_struct *work){
         USB1_Print_DeviceDescriptor2(data);
         USB1_Print_DeviceDescriptorIf0(data);
 #endif
+        // Setup FIFO, config once
+        USB1_SetupBulkFifos(data, 4, 3);
+
+        /* drop old data; no producer is running yet */
+        kfifo_reset(&data->rx_fifo);                       
+        data->rx_task = kthread_run(usb1_rx_thread, data, "usb1_rx");
+
+        USB1_PrintCoreConfig(data);
+
         data->done_configured = true;
     }
 }
@@ -323,6 +355,12 @@ static int usb1_probe(struct platform_device *pdev)
     INIT_WORK(&data->descriptor_work, descriptor_work_func);
     INIT_WORK(&data->descriptor_clear_work, descriptor_clear_work_func);
 
+    mutex_init(&data->hw_lock);
+    init_waitqueue_head(&data->rx_wait);
+    init_waitqueue_head(&data->irq_wait);
+    //init_waitqueue_head(&data->irq_wait_reg);
+    INIT_KFIFO(data->rx_fifo);
+
     return 0;
 }
 
@@ -332,6 +370,21 @@ static int usb1_remove(struct platform_device *pdev)
 
     cancel_work_sync(&data->descriptor_work);
     cancel_work_sync(&data->descriptor_clear_work);
+
+
+    /* Mark the device unavailable first. */
+    WRITE_ONCE(data->done_configured, false);
+
+    /* Wake any threads blocked on receive data or USB events. */
+    wake_up_interruptible(&data->rx_wait);
+    wake_up_interruptible(&data->irq_wait);
+    //wake_up_interruptible(&data->irq_wait_reg);
+
+    /* Stop the RX thread and wait for it to exit. */
+    if (data->rx_task) {
+        kthread_stop(data->rx_task);
+        data->rx_task = NULL;
+}
 
     USB1_deinit(data);
     PHY1_deinit(data);
