@@ -1,35 +1,284 @@
-
-===================
-[38/200] Sending command...
-Sent 146 bytes
-Received[145]: 'Chu and Hanes:r1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 38'
-**RESULT: FAIL (reply mismatch)**
-TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 38
-RX: Chu and Hanes:r1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 38
-===================
-[39/200] Sending command...
-Sent 146 bytes
-Received[145]: 'Chu and Hames:r1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 39'
-**RESULT: FAIL (reply mismatch)**
-TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 39
-RX: Chu and Hames:r1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 39
-===================
-[40/200] Sending command...
-Sent 146 bytes
-Received[17]: 'Chu and Han war10'
-**RESULT: FAIL (reply mismatch)**
-TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 40
-RX: Chu and Han war10
-===================
-[41/200] Sending command...
-Sent 146 bytes
-Received[145]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 41'
+[153/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 153'
 **RESULT: PASS**
 ===================
-[42/200] Sending command...
-Sent 146 bytes
-Received[145]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 42'
+[154/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han s: 1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 154'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 154
+RX: Chu and Han s: 1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 154
+===================
+[155/200] Sending command...
+Sent 147 bytes
+Received[19]: 'Chu and Han war1 + '
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 155
+RX: Chu and Han war1 + 
+===================
+[156/200] Sending command...
+Sent 147 bytes
+Received[18]: 'Chu and Han war1 +'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 156
+RX: Chu and Han war1 +
+===================
+[157/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 157'
 **RESULT: PASS**
+===================
+[158/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 158'
+**RESULT: PASS**
+===================
+[159/200] Sending command...
+Sent 147 bytes
+Received[19]: 'Chu and Han war1 + '
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 159
+RX: Chu and Han war1 + 
+===================
+[160/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and tan war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 160'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 160
+RX: Chu and tan war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 160
+===================
+[161/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 161'
+**RESULT: PASS**
+===================
+[162/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 162'
+**RESULT: PASS**
+===================
+[163/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 163'
+**RESULT: PASS**
+===================
+[164/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 164'
+**RESULT: PASS**
+===================
+[165/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 165'
+**RESULT: PASS**
+===================
+[166/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu!and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 166'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 166
+RX: Chu!and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 166
+===================
+[167/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 167'
+**RESULT: PASS**
+===================
+[168/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Ham war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 168'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 168
+RX: Chu and Ham war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 168
+===================
+[169/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Him war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 169'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 169
+RX: Chu and Him war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 169
+===================
+[170/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 170'
+**RESULT: PASS**
+===================
+[171/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 171'
+**RESULT: PASS**
+===================
+[172/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu a!_ Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 172'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 172
+RX: Chu a!_ Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 172
+===================
+[173/200] Sending command...
+Sent 147 bytes
+Received[18]: 'Chu!!!_ times: 173'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 173
+RX: Chu!!!_ times: 173
+===================
+[174/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 174'
+**RESULT: PASS**
+===================
+[175/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 175'
+**RESULT: PASS**
+===================
+[176/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 176'
+**RESULT: PASS**
+===================
+[177/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 177'
+**RESULT: PASS**
+===================
+[178/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war178 Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 178'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 178
+RX: Chu and Han war178 Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 178
+===================
+[179/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Hin war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 179'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 179
+RX: Chu and Hin war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 179
+===================
+[180/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 180'
+**RESULT: PASS**
+===================
+[181/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 181'
+**RESULT: PASS**
+===================
+[182/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 182'
+**RESULT: PASS**
+===================
+[183/200] Sending command...
+Sent 147 bytes
+Received[18]: 'Chu and Han war183'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 183
+RX: Chu and Han war183
+===================
+[184/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu a!_ Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 184'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 184
+RX: Chu a!_ Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 184
+===================
+[185/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 185'
+**RESULT: PASS**
+===================
+[186/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 186'
+**RESULT: PASS**
+===================
+[187/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 187'
+**RESULT: PASS**
+===================
+[188/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Him war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 188'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 188
+RX: Chu and Him war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 188
+===================
+[189/200] Sending command...
+Sent 147 bytes
+Received[20]: 'Chu and Han war1 + C'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 189
+RX: Chu and Han war1 + C
+===================
+[190/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Him war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 190'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 190
+RX: Chu and Him war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 190
+===================
+[191/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 191'
+**RESULT: PASS**
+===================
+[192/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 192'
+**RESULT: PASS**
+===================
+[193/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war193 Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 193'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 193
+RX: Chu and Han war193 Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 193
+===================
+[194/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 194'
+**RESULT: PASS**
+===================
+[195/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 195'
+**RESULT: PASS**
+===================
+[196/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 196'
+**RESULT: PASS**
+===================
+[197/200] Sending command...
+Sent 147 bytes
+Received[18]: 'Chu and Han war1 7'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 197
+RX: Chu and Han war1 7
+===================
+[198/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 198'
+**RESULT: PASS**
+===================
+[199/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 199'
+**RESULT: PASS**
+===================
+[200/200] Sending command...
+Sent 147 bytes
+Received[146]: 'Chu and Han war200 Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 200'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 200
+RX: Chu and Han war200 Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 200
+===================
 
-
-
+========== SUMMARY ==========
+PASS: 121/200
+FAIL: 79/200
