@@ -12,8 +12,8 @@ String inputString = "";         // Buffer for incoming data
 boolean stringComplete = false;  // Flag for full line received
 
 void setup() {
-  // Initialize USB serial at 9600 baud (host can override via SET_LINE_CODING).
-  Serial.begin(9600);
+  // Initialize USB serial at 115200 baud (host can override via SET_LINE_CODING).
+  Serial.begin(115200);
   pinMode(7, OUTPUT);
   digitalWrite(7, led);
   // Wait for serial connection (optional, for boards like Leonardo).
@@ -58,6 +58,8 @@ void loop() {
     
     // Echo response: Send back the input with prefix.
     //Serial.print("Received: ");
+
+    delay(50);
     Serial.print(inputString);
     Serial.println();  // Add newline for clean output
 

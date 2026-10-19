@@ -431,8 +431,6 @@ struct usb_device_data {
     struct mutex        hw_lock;      /* INDEX + endpoint registers */
     wait_queue_head_t   rx_wait;
     wait_queue_head_t   irq_wait;
-    //wait_queue_head_t   irq_wait_reg;
-    DECLARE_KFIFO(rx_fifo, u8, 1024); /* size must be a power of 2 */
 };
 
 /* ================== Handler ====================*/

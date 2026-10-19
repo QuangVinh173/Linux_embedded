@@ -1,50 +1,35 @@
-Sent 49 bytes
-Received[48]: Chu and Han war + Chu and Han war!!!!_ times: 34'
+
+===================
+[38/200] Sending command...
+Sent 146 bytes
+Received[145]: 'Chu and Hanes:r1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 38'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 38
+RX: Chu and Hanes:r1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 38
+===================
+[39/200] Sending command...
+Sent 146 bytes
+Received[145]: 'Chu and Hames:r1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 39'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 39
+RX: Chu and Hames:r1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 39
+===================
+[40/200] Sending command...
+Sent 146 bytes
+Received[17]: 'Chu and Han war10'
+**RESULT: FAIL (reply mismatch)**
+TX: Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 40
+RX: Chu and Han war10
+===================
+[41/200] Sending command...
+Sent 146 bytes
+Received[145]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 41'
 **RESULT: PASS**
 ===================
-Sent 49 bytes
-Received[48]: Chu and Han war + Chu and Han war!!!!_ times: 35'
+[42/200] Sending command...
+Sent 146 bytes
+Received[145]: 'Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + Chu and Han war7!!!!_ times: 42'
 **RESULT: PASS**
-===================
-Sent 49 bytes
-Received[48]: Chu and Han war + Chu and Han war!!!!_ times: 36'
-**RESULT: PASS**
-===================
-Sent 49 bytes
-Received[0]: '
-**RESULT: FAIL**
-===================
-Sent 49 bytes
-Received[38]: n war + Chu and Han war!!!!_ times: 37'
-**RESULT: FAIL**
-===================
-Sent 49 bytes
-Received[38]: n war + Chu and Han war!!!!_ times: 38'
-**RESULT: FAIL**
-===================
 
 
-=== kernel:
-[44215.604394] Sending OutData to Arduino
-[44215.611708] data->RX[0] = 
-[44215.614685] data->RX[6] = 6e 20 77 61 72 20
-[44215.625178] data->RX[35] = 2b 20 43 68 75 20 61 6e 64 20 48 61 6e 20a
-[44216.642373] usb1_write -> count = 49
-[44216.646080] Sending OutData to Arduino
-[44216.653053] data->RX[0] = 
-[44216.656078] data->RX[39] = 6e 20 77 61 72 20 2b 20 43 68 75 20 61 6ea
-[44217.676892] usb1_write -> count = 49
-[44217.680576] Sending OutData to Arduino
-[44220.686018] usb1_class usb1: bulk OUT EP4 failed (-110): TXCSR=0x2001
-[44220.693715] usb1_class usb1: Send error
-[44220.704385] usb1_write -> count = 49
-[44220.708167] Sending OutData to Arduino
-[44220.910088] usb1_class usb1: Timeout waiting for TX FIFO empty: EP4 3
-[44220.917603] usb1_class usb1: bulk OUT EP4 failed (-110): TXCSR=0x2001
-[44220.925290] usb1_class usb1: Send error
-[44220.938900] usb1_write -> count = 49
-[44220.942695] Sending OutData to Arduino
-[44221.145998] usb1_class usb1: Timeout waiting for TX FIFO empty: EP4 3
-[44221.153527] usb1_class usb1: bulk OUT EP4 failed (-110): TXCSR=0x2001
-[44221.161224] usb1_class usb1: Send error
 

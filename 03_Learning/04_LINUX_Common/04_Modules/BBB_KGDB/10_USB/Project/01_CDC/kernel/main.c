@@ -100,57 +100,31 @@ static ssize_t usb1_write(struct file *filp, const char __user *buf, size_t coun
 }
 
 static ssize_t usb1_read(struct file *filp, char __user *buf, size_t len, loff_t *f_pos){
-    // struct usb_device_data *data = filp->private_data;
-    // u16 InDataLen;
-    // u8 epNum_bulk_in_addr, in;
-    // int ret;
-
-    // if (!data->done_configured){
-    //     return -2;
-    // }
-
-    // /* First 4 bits are enpoint addr */
-    // epNum_bulk_in_addr = data->InsDeviceDescriptor.ep_bulk_in_bEndpointAddress & 0x0F;
-
-    // /* bit 7 is r/w */
-    // in = data->InsDeviceDescriptor.ep_bulk_in_bEndpointAddress & 0x80;
-    // if (!(in & 0x80)) {
-    //     printk("Invalid enpoint addr\n");
-    //     return -1;
-    // }
-
-    // ret = USB1_IN_Phase_Bulk(data, epNum_bulk_in_addr, ARDUINO_DEVICE_ADDR, data->RX, &InDataLen);
-    // if (ret < 0) return ret;
-
-    // print_arr(data->RX, InDataLen, "data->RX");
-
-    // data->RX_index = 0;
-
-    // if (copy_to_user(buf, data->RX, InDataLen))
-    //     return -EFAULT;
-
-    // return InDataLen;
-
-
-
     struct usb_device_data *data = filp->private_data;
     unsigned int copied;
     long ret;
+    int count = 0;
  
     if (!data->done_configured)
         return -ENODEV;
  
     /* Sleep until the thread puts something in the kfifo */
     ret = wait_event_interruptible_timeout(data->rx_wait,
-              !kfifo_is_empty(&data->rx_fifo) || !data->done_configured,
+              data->RX_index,
               msecs_to_jiffies(3000));
     if (ret == 0)  return -EAGAIN;          /* no data for 3 s */
     if (ret < 0)   return ret;              /* signal (Ctrl+C) */
     if (!data->done_configured) return -ENODEV;
+
+    //data->RX_index = 0;
+    printk("RX_index = %d\n", data->RX_index);
  
     /* Copy up to len bytes straight from the ring to user space */
-    ret = kfifo_to_user(&data->rx_fifo, buf, len, &copied);
-    return ret ? ret : copied;
+    ret = copy_to_user(buf, data->RX, data->RX_index);
+
+    count = data->RX_index;
+    data->RX_index = 0;
+    return ret ? ret : count;
 }
  
 static long usb1_ioctl(struct file *file,
@@ -221,8 +195,7 @@ static void descriptor_work_func(struct work_struct *work){
         // Setup FIFO, config once
         USB1_SetupBulkFifos(data, 4, 3);
 
-        /* drop old data; no producer is running yet */
-        kfifo_reset(&data->rx_fifo);                       
+        /* drop old data; no producer is running yet */                  
         data->rx_task = kthread_run(usb1_rx_thread, data, "usb1_rx");
 
         USB1_PrintCoreConfig(data);
@@ -359,7 +332,6 @@ static int usb1_probe(struct platform_device *pdev)
     init_waitqueue_head(&data->rx_wait);
     init_waitqueue_head(&data->irq_wait);
     //init_waitqueue_head(&data->irq_wait_reg);
-    INIT_KFIFO(data->rx_fifo);
 
     return 0;
 }

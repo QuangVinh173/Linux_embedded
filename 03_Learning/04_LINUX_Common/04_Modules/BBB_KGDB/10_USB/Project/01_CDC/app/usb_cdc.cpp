@@ -289,3 +289,16 @@ void CDCUSB::writeReadOption()
     if (!readData(response, 3000))
         std::cout << "Transaction failed or timed out.\n";
 }
+
+void CDCUSB::ReadOption()
+{
+    if (!isOpen()) {
+        std::cerr << "Device is not open.\n";
+        return;
+    }
+
+    std::string response;
+
+    if (!readData(response, 3000))
+        std::cout << "Transaction failed or timed out.\n";
+}

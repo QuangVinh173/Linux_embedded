@@ -46,7 +46,7 @@ public:
     bool readData(std::string& response, int timeoutMs = 3000);
 
     void writeOption();
-    void readOption();
+    void ReadOption();
     void writeReadOption();
 
 private:

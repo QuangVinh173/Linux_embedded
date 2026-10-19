@@ -203,16 +203,16 @@ int wait_val_update(
         timeout);
 
     if (ret < 0) {
-        dev_info(data->dev,
-                 "Val - Wait for %s interrupted: %ld\n",
-                 name_val, ret);
+        // dev_info(data->dev,
+        //          "Val - Wait for %s interrupted: %ld\n",
+        //          name_val, ret);
         return (int)ret;
     }
 
     if (ret == 0) {
-        dev_err(data->dev,
-                "Val - Timeout waiting for %s (mask=0x%04x, flags=0x%04x)\n",
-                name_val, val, READ_ONCE(*var));
+        // dev_err(data->dev,
+        //         "Val - Timeout waiting for %s (mask=0x%04x, flags=0x%04x)\n",
+        //         name_val, val, READ_ONCE(*var));
         return -ETIMEDOUT;
     }
 
@@ -1287,12 +1287,18 @@ int usb1_rx_thread(void *arg)
         //n = USB1_Bulk_IN_Once(data, ep, pkt, sizeof(pkt));
         ret = USB1_IN_Phase_Bulk(data, ep, ARDUINO_DEVICE_ADDR, data->RX, &n);
         mutex_unlock(&data->hw_lock);
+
+        if (ret < 0) {
+            /* Do not insert failed-transfer data into the FIFO. */
+            //msleep(10);
+            continue;
+        }
  
         printk("=> n = %d\n", n);
         if (n > 0) {
-            unsigned int put = kfifo_in(&data->rx_fifo, data->RX, n);   /* copy into the ring */
-            if (put < n)
-                dev_warn_ratelimited(data->dev, "rx_fifo full, dropped %d\n", n - put);
+            //unsigned int put = kfifo_in(&data->rx_fifo, data->RX, n);   /* copy into the ring */
+            // if (put < n)
+            //     dev_warn_ratelimited(data->dev, "rx_fifo full, dropped %d\n", n - put);
             wake_up_interruptible(&data->rx_wait);                 /* tell read() */
         } else if (n == 0) {
             usleep_range(200, 500);   /* device NAKed: no data. Let write() take the lock */
@@ -1302,206 +1308,3 @@ int usb1_rx_thread(void *arg)
     }
     return 0;
 }
-
-
-
-// /*
-//  * Drop-in replacement for the bulk OUT path in usb1.c.  Untested on hardware.
-//  *
-//  * In usb1.c:
-//  *   - delete USB1_Bulk_SetTXCSR() and the old USB1_OUT_Phase_Bulk()
-//  *   - paste this file where USB1_OUT_Phase_Bulk() used to be
-//  *     (after USB1_WaitTxFifoEmpty())
-//  *   - in USB1_GetDesc_Transfer(), right after the SetConf_pkt transaction
-//  *     succeeds, call USB1_Bulk_ResetToggles(data);
-//  *   - in USB1_IN_Phase_Bulk(), change the RX FIFO address write to
-//  *       iowrite16(BULK_IN_FIFO_ADDR >> 3, data->base_usb1core + MUSB_RXFIFOADD);
-//  *   - add the prototype of USB1_Bulk_ResetToggles() to usb1.h
-//  */
- 
-// #define EP_REGS(d)           ((d)->base_usb1core + 0x10)  /* indexed EP registers */
- 
-// /* EP0 owns FIFO RAM 0x00-0x3F; every other endpoint needs its own region. */
-// #define BULK_OUT_FIFO_ADDR   0x40
-// #define BULK_IN_FIFO_ADDR    0x80
-// #define BULK_PKT_TIMEOUT_MS  3000
- 
-// #define TXCSR_H_ERRORS       (MUSB_TXCSR_H_NAKTIMEOUT | MUSB_TXCSR_H_RXSTALL | \
-//                               MUSB_TXCSR_H_ERROR)
-// #define RXCSR_H_WZC_BITS     (MUSB_RXCSR_H_RXSTALL | MUSB_RXCSR_H_ERROR | \
-//                               MUSB_RXCSR_DATAERROR)
- 
-// /*
-//  * TXCSR host status bits (NAKTIMEOUT, RXSTALL, ERROR, FIFONOTEMPTY) are
-//  * write-zero-to-clear: writing 1 keeps them, writing 0 clears them.
-//  */
-// static void USB1_TxCsrUpdate(struct usb_device_data *data, u16 set, u16 clear)
-// {
-//     u16 csr = ioread16(EP_REGS(data) + MUSB_TXCSR);
- 
-//     csr |= MUSB_TXCSR_H_WZC_BITS;   /* preserve status bits ... */
-//     csr &= ~clear;                  /* ... except the ones we clear */
-//     csr |= set;
-//     iowrite16(csr, EP_REGS(data) + MUSB_TXCSR);
-// }
- 
-// /* Discard whatever is stuck in the TX FIFO and clear stale status bits. */
-// static void USB1_TxFlush(struct usb_device_data *data, u8 epnum)
-// {
-//     int i;
- 
-//     setIndex(data, epnum);
- 
-//     for (i = 0; i < 4; i++) {
-//         if (!(ioread16(EP_REGS(data) + MUSB_TXCSR) & MUSB_TXCSR_FIFONOTEMPTY))
-//             break;
-//         USB1_TxCsrUpdate(data, MUSB_TXCSR_FLUSHFIFO, TXCSR_H_ERRORS);
-//     }
-//     USB1_TxCsrUpdate(data, 0, TXCSR_H_ERRORS);
-// }
- 
-// static void USB1_BulkOut_Setup(struct usb_device_data *data, u8 epnum, u8 addr)
-// {
-//     struct usb_DeviceDescriptor *d = &data->InsDeviceDescriptor;
- 
-//     setIndex(data, epnum);
- 
-//     /* a packet left behind by an earlier failed write must not be re-sent */
-//     USB1_TxFlush(data, epnum);
- 
-//     iowrite8(3, data->base_usb1core + MUSB_TXFIFOSZ);   /* 2^(3+3) = 64 B */
-//     iowrite16(BULK_OUT_FIFO_ADDR >> 3, data->base_usb1core + MUSB_TXFIFOADD);
- 
-//     USB1_Bulk_SetAddrTx(data, addr, epnum);
-//     USB1_Bulk_SetTypeTx(data, epnum,
-//                         data->full_speed ? FULL_SPEED : LOW_SPEED,
-//                         d->ep_bulk_out_bmAttributes);
-//     USB1_Bulk_SetTxMaxp(data, d->ep_bulk_out_wMaxPacketSize);
-//     USB1_Bulk_SetTxInterval(data, d->ep_bulk_out_bInterval);
- 
-//     /*
-//      * TX mode (bit 13).  The old code used iowrite8(), which dropped it.
-//      * The data toggle is deliberately NOT touched here: it must keep running
-//      * across write() calls, and is only reset by USB1_Bulk_ResetToggles().
-//      */
-//     iowrite16(MUSB_TXCSR_MODE, EP_REGS(data) + MUSB_TXCSR);
-// }
- 
-// static int USB1_WaitTxIrq(u8 epnum, unsigned long deadline)
-// {
-//     while (!(READ_ONCE(Tx1_flag) & BIT(epnum))) {   /* '&', not '==' */
-//         if (time_after(jiffies, deadline))
-//             return -ETIMEDOUT;
-//         usleep_range(50, 100);
-//     }
-//     WRITE_ONCE(Tx1_flag, 0);
-//     return 0;
-// }
- 
-// static int USB1_BulkOut_Packet(struct usb_device_data *data, u8 epnum,
-//                                const u8 *buf, u32 n)
-// {
-//     unsigned long deadline = jiffies + msecs_to_jiffies(BULK_PKT_TIMEOUT_MS);
-//     u16 csr = 0;
-//     u32 i;
-//     int ret;
- 
-//     setIndex(data, epnum);
- 
-//     ret = USB1_WaitTxFifoEmpty(data, epnum, 200);
-//     if (ret)
-//         goto abort;
- 
-//     for (i = 0; i < n; i++)
-//         USB1_WriteU8DataFIFO(data, epnum, buf[i]);
- 
-//     WRITE_ONCE(Tx1_flag, 0);            /* forget events of earlier packets */
-//     USB1_TxCsrUpdate(data, MUSB_TXCSR_TXPKTRDY, 0);
- 
-//     for (;;) {
-//         ret = USB1_WaitTxIrq(epnum, deadline);
-//         if (ret)
-//             goto abort;
- 
-//         setIndex(data, epnum);
-//         csr = ioread16(EP_REGS(data) + MUSB_TXCSR);
- 
-//         /* TXCSR bit layout, not CSR0: RXSTALL = 0x20, ERROR = 0x04 */
-//         if (csr & MUSB_TXCSR_H_RXSTALL) {
-//             ret = -EPIPE;
-//             goto abort;
-//         }
-//         if (csr & MUSB_TXCSR_H_ERROR) {
-//             ret = -EIO;
-//             goto abort;
-//         }
-//         if (csr & MUSB_TXCSR_H_NAKTIMEOUT) {
-//             printk("MUSB_TXCSR_H_NAKTIMEOUT\n");
-//             /*
-//              * The device kept NAKing: its OUT buffer is still full.  That is
-//              * flow control, not a failure.  Clearing the bit lets the core
-//              * retry the same packet; give up only at our own deadline.
-//              */
-//             if (time_after(jiffies, deadline)) {
-//                 ret = -ETIMEDOUT;
-//                 goto abort;
-//             }
-//             USB1_TxCsrUpdate(data, 0, MUSB_TXCSR_H_NAKTIMEOUT);
-//             continue;
-//         }
-//         if (!(csr & (MUSB_TXCSR_TXPKTRDY | MUSB_TXCSR_FIFONOTEMPTY)))
-//             return 0;                   /* packet ACKed */
-//         /* otherwise: not finished yet, wait for the next event */
-//     }
- 
-// abort:
-//        csr = ioread16(EP_REGS(data) + MUSB_TXCSR);   /* real state, not the initial 0 */
-//        dev_err(data->dev, "bulk OUT EP%u failed (%d): TXCSR=0x%04x TXINTERVAL=%u\n",
-//                epnum, ret, csr, ioread8(EP_REGS(data) + MUSB_TXINTERVAL));
-//        USB1_TxFlush(data, epnum);
-//     return ret;
-// }
- 
-// int USB1_OUT_Phase_Bulk(struct usb_device_data *data, u8 epnum, u8 addr,
-//                         const u8 *dataX, u32 len)
-// {
-//     u16 maxp = data->InsDeviceDescriptor.ep_bulk_out_wMaxPacketSize;
-//     u32 offset = 0;
-//     int ret;
- 
-//     if (!maxp)
-//         return -EINVAL;
- 
-//     USB1_BulkOut_Setup(data, epnum, addr);
- 
-//     while (offset < len) {
-//         u32 n = min_t(u32, maxp, len - offset);
- 
-//         ret = USB1_BulkOut_Packet(data, epnum, dataX + offset, n);
-//         if (ret)
-//             return ret;
-//         offset += n;
-//     }
-//     return 0;
-// }
- 
-// /*
-//  * Host and device both restart at DATA0 on SET_CONFIGURATION.  The host's
-//  * toggle lives in the controller and survives re-enumeration, so clear it
-//  * once here.  Do NOT call this per write(): the device toggle keeps running.
-//  */
-// void USB1_Bulk_ResetToggles(struct usb_device_data *data)
-// {
-//     struct usb_DeviceDescriptor *d = &data->InsDeviceDescriptor;
-//     u8 out_ep = d->ep_bulk_out_bEndpointAddress & 0x0F;
-//     u8 in_ep  = d->ep_bulk_in_bEndpointAddress & 0x0F;
-//     u16 csr;
- 
-//     setIndex(data, out_ep);
-//     USB1_TxCsrUpdate(data, MUSB_TXCSR_CLRDATATOG, 0);
- 
-//     setIndex(data, in_ep);
-//     csr = ioread16(EP_REGS(data) + MUSB_RXCSR);
-//     csr |= RXCSR_H_WZC_BITS | MUSB_RXCSR_CLRDATATOG;
-//     iowrite16(csr, EP_REGS(data) + MUSB_RXCSR);
-// }
