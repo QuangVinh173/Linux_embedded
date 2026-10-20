@@ -1096,6 +1096,29 @@ static void USB1_TxAbort(struct usb_device_data *data, u8 epnum)
     }
 }
 
+static void USB1_RxFlush(struct usb_device_data *data, u8 epnum)
+{
+    void __iomem *csr = data->base_usb1core + 0x10 + MUSB_RXCSR;
+    u16 v;
+    int i;
+ 
+    setIndex(data, epnum);
+    for (i = 0; i < 2; i++) {                 /* 2× for double buffering */
+        v = ioread16(csr);
+        if (!(v & (MUSB_RXCSR_RXPKTRDY | MUSB_RXCSR_FIFOFULL)))
+            break;                             /* nothing loaded: don't flush */
+        
+        //printk("USB1_RxFlush - Flush\n");
+        v &= ~(MUSB_RXCSR_H_RXSTALL | MUSB_RXCSR_H_ERROR | MUSB_RXCSR_H_NAKTIMEOUT);
+        v |= MUSB_RXCSR_FLUSHFIFO;
+        iowrite16(v, csr);
+        udelay(1);
+    }
+
+    Rx1_flag &= ~BIT(epnum); 
+    //flag_clear(&Tx1_flag, BIT(epnum));         /* drop the interrupt the flush raised */
+}
+
 /* ================== API for Bulk Transfer ===================== */
 int USB1_OUT_Phase_Bulk(struct usb_device_data *data, u8 epnum, u8 addr, const u8* dataX, u32 len){
     u16 host_csr0 = 0, txcsr = 0;
@@ -1210,24 +1233,30 @@ int USB1_IN_Phase_Bulk(struct usb_device_data *data, u8 epnum, u8 addr, u8* data
     RXInterval = data->InsDeviceDescriptor.ep_bulk_in_bInterval;
     transfer_type = data->InsDeviceDescriptor.ep_bulk_in_bmAttributes;
 
+    //mutex_lock(&data->hw_lock); /***** */
     setIndex(data, epnum);
+
 
     // 1. forget any old event
     Rx1_flag &= ~BIT(epnum); 
 
+    //USB1_RxFlush(data, epnum);
     // 2. start this packet
     rxcsr = MUSB_RXCSR_H_REQPKT;
     iowrite16(rxcsr, data->base_usb1core + 0x10 + MUSB_RXCSR);
 
+    //mutex_unlock(&data->hw_lock); /***** */
+
     // 3. wait for Endpoint interrupt (Data packet)
-    ret = wait_val_update(data, &Rx1_flag, BIT(epnum), 2000, "IN Bulk: Data0/1");
+    ret = wait_val_update(data, &Rx1_flag, BIT(epnum), 200, "IN Bulk: Data0/1");
     if (ret < 0) return -1;
-    Rx1_flag = 0;
+    Rx1_flag &= ~BIT(epnum); 
 
     // wait MUSB_RXCSR_RXPKTRDY
-    ret = wait_register_update(data, data->base_usb1core, 0x10 + MUSB_RXCSR, 0, 1, 2000, "MUSB_RXCSR_RXPKTRDY");
+    ret = wait_register_update(data, data->base_usb1core, 0x10 + MUSB_RXCSR, 0, 1, 200, "MUSB_RXCSR_RXPKTRDY");
     if (ret < 0) return -1;
 
+    //mutex_lock(&data->hw_lock); /***** */
     count = ioread16(data->base_usb1core + 0x10 + MUSB_RXCOUNT)&0xFFFF;
 
     host_csr0 = ioread16(data->base_usb1core + 0x10 + MUSB_RXCSR)&0xFF;
@@ -1237,28 +1266,36 @@ int USB1_IN_Phase_Bulk(struct usb_device_data *data, u8 epnum, u8 addr, u8* data
 #endif
     // Check error
     if (host_csr0&MUSB_RXCSR_H_RXSTALL) {
-        dev_info(data->dev, "RXSTALL - DATA\n");
+        dev_warn_ratelimited(data->dev, "RXSTALL - DATA\n");
+        //mutex_unlock(&data->hw_lock); /***** */
         return -1;
     }
     if (host_csr0&MUSB_RXCSR_H_ERROR) {
-        dev_info(data->dev, "ERROR\n"); // the controller has tried to send the required IN token three times without getting any response
+        dev_warn_ratelimited(data->dev, "ERROR\n"); // the controller has tried to send the required IN token three times without getting any response
+        //mutex_unlock(&data->hw_lock); /***** */
         return -1;
     }
     if (host_csr0&MUSB_CSR0_H_NAKTIMEOUT) {
-        dev_info(data->dev, "NAK_TIMEOUT\n"); // .... consider later
+        dev_warn_ratelimited(data->dev, "NAK_TIMEOUT\n"); // .... consider later
+        //mutex_unlock(&data->hw_lock); /***** */
         return -1;
     } 
-    if (host_csr0&MUSB_RXCSR_FIFOFULL) {
-//#if (PRINT_DEBUG)
-        dev_info(data->dev, "MUSB_RXCSR_FIFOFULL\n"); // .... consider later
-//#endif
-    } 
+//     if (host_csr0&MUSB_RXCSR_FIFOFULL) {
+// //#if (PRINT_DEBUG)
+//         dev_warn_ratelimited(data->dev, "MUSB_RXCSR_FIFOFULL\n"); // .... consider later
+// //#endif
+//     } 
     if (host_csr0&MUSB_RXCSR_RXPKTRDY){
 //#if (PRINT_DEBUG)
-        printk("Reading IN BULK with ACKed!\n");
+        dev_warn_ratelimited(data->dev, "[%d] IN BULK ACKed!\n", count);
 //#endif
-        for (i = 0; i < count; i++){
-            dataX[data->RX_index++] = USB1_ReadU8FIFO(data, epnum);
+        // for (i = 0; i < count; i++){
+        //     dataX[data->RX_index++] = USB1_ReadU8FIFO(data, epnum);
+        // }
+
+        for (i = 0; i < count; i++) {
+            dataX[i] = USB1_ReadU8FIFO(data, epnum);
+            //data->RX[data->RX_index++] = dataX[i];
         }
 
         // clear RXPKTRDY
@@ -1266,6 +1303,8 @@ int USB1_IN_Phase_Bulk(struct usb_device_data *data, u8 epnum, u8 addr, u8* data
         host_csr0 &=~ MUSB_RXCSR_RXPKTRDY; 
         iowrite32(host_csr0, data->base_usb1core + 0x10 + MUSB_RXCSR);
     } 
+
+    //mutex_unlock(&data->hw_lock); /***** */
      
     return 0;
 }
@@ -1276,35 +1315,63 @@ int USB1_IN_Phase_Bulk(struct usb_device_data *data, u8 epnum, u8 addr, u8* data
 int usb1_rx_thread(void *arg)
 {
     struct usb_device_data *data = arg;
-    u8  ep   = data->InsDeviceDescriptor.ep_bulk_in_bEndpointAddress & 0x0F;
-    //u8  pkt[64];
+    u8 ep;
+    u8 pkt[64];
     u16 n;
     int ret;
  
+    ep = data->InsDeviceDescriptor
+             .ep_bulk_in_bEndpointAddress & 0x0F;
+ 
     while (!kthread_should_stop()) {
-        /* One IN poll: REQPKT, then wait for data or a NAK timeout (~16 ms) */
+ 
+        n = 0;
+ 
         mutex_lock(&data->hw_lock);
-        //n = USB1_Bulk_IN_Once(data, ep, pkt, sizeof(pkt));
-        ret = USB1_IN_Phase_Bulk(data, ep, ARDUINO_DEVICE_ADDR, data->RX, &n);
+ 
+        ret = USB1_IN_Phase_Bulk(
+            data,
+            ep,
+            ARDUINO_DEVICE_ADDR,
+            pkt,
+            &n);
+ 
         mutex_unlock(&data->hw_lock);
-
+        //data->RX_len += n;
+ 
         if (ret < 0) {
-            /* Do not insert failed-transfer data into the FIFO. */
-            //msleep(10);
             continue;
         }
  
-        printk("=> n = %d\n", n);
         if (n > 0) {
-            //unsigned int put = kfifo_in(&data->rx_fifo, data->RX, n);   /* copy into the ring */
-            // if (put < n)
-            //     dev_warn_ratelimited(data->dev, "rx_fifo full, dropped %d\n", n - put);
-            wake_up_interruptible(&data->rx_wait);                 /* tell read() */
-        } else if (n == 0) {
-            usleep_range(200, 500);   /* device NAKed: no data. Let write() take the lock */
+            unsigned int put;
+ 
+            printk("IN packet = %u bytes\n", n);
+            //printk("Last char = 0x%x\n", pkt[n - 1]);
+ 
+            put = kfifo_in(
+                &data->rx_fifo,
+                pkt,
+                n);
+ 
+            if (put != n) {
+                // dev_warn_ratelimited(
+                //     data->dev,
+                //     "RX software FIFO full: received=%u stored=%u dropped=%u\n",
+                //     n, put, n - put);
+
+                dev_warn_ratelimited(
+                    data->dev,
+                    "RX software FIFO full");
+            }
+ 
+            if (put)
+                wake_up_interruptible(&data->rx_wait);
+ 
         } else {
-            msleep(50);               /* error or unplug: back off */
+            //usleep_range(200, 500);
         }
     }
+ 
     return 0;
 }

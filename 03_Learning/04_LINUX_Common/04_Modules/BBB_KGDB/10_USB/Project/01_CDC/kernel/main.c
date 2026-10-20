@@ -23,10 +23,19 @@ void print_arr(u8* d, u16 len, u8* name){
 /* File operation functions */
 static int usb1_open(struct inode *inode, struct file *file){
     struct usb_device_data *data = container_of(inode->i_cdev, struct usb_device_data, cdev);
+    int i;
+
     file->private_data = data;
+    if (!READ_ONCE(data->done_configured))
+        return 0;
 
-    /* Do nothing */
 
+    for (i = 0; i < 20; i++) {              /* gives up after 6 s */
+        kfifo_reset_out(&data->rx_fifo);    /* safe with a running producer */
+        msleep(300);
+        if (kfifo_is_empty(&data->rx_fifo))
+            break;                          /* 300 ms of silence */
+    }
     return 0;
 }
 
@@ -86,7 +95,7 @@ static ssize_t usb1_write(struct file *filp, const char __user *buf, size_t coun
         return -1;
     }
     // reset buffer idx
-    data->RX_index = 0;
+    //data->RX_index = 0;
 
     printk("Sending OutData to Arduino\n");
     mutex_lock(&data->hw_lock);
@@ -101,30 +110,57 @@ static ssize_t usb1_write(struct file *filp, const char __user *buf, size_t coun
 
 static ssize_t usb1_read(struct file *filp, char __user *buf, size_t len, loff_t *f_pos){
     struct usb_device_data *data = filp->private_data;
-    unsigned int copied;
-    long ret;
-    int count = 0;
+    unsigned int copied = 0;
+    int ret;
  
-    if (!data->done_configured)
+    if (!READ_ONCE(data->done_configured))
         return -ENODEV;
  
-    /* Sleep until the thread puts something in the kfifo */
-    ret = wait_event_interruptible_timeout(data->rx_wait,
-              data->RX_index,
-              msecs_to_jiffies(3000));
-    if (ret == 0)  return -EAGAIN;          /* no data for 3 s */
-    if (ret < 0)   return ret;              /* signal (Ctrl+C) */
-    if (!data->done_configured) return -ENODEV;
+    /*
+     * Wait until:
+     *   1. RX FIFO contains data, or
+     *   2. USB device is disconnected, or
+     *   3. timeout / signal occurs.
+     */
+    ret = wait_event_interruptible_timeout(
+        data->rx_wait,
 
-    //data->RX_index = 0;
-    printk("RX_index = %d\n", data->RX_index);
+        !kfifo_is_empty(&data->rx_fifo) 
+
+        // data->RX_index
+        ,
+        msecs_to_jiffies(3000));
+
  
-    /* Copy up to len bytes straight from the ring to user space */
-    ret = copy_to_user(buf, data->RX, data->RX_index);
+    if (ret < 0)
+        return ret;             /* Interrupted by signal */
+ 
+    if (ret == 0)
+        return -EAGAIN;         /* Timeout */
+ 
+    if (!READ_ONCE(data->done_configured))
+        return -ENODEV;         /* Device disconnected */
+ 
+    /*
+     * Copy up to 'len' bytes from kernel FIFO to user space.
+     * Remaining bytes stay inside rx_fifo for the next read().
+     */
+    ret = kfifo_to_user(&data->rx_fifo,
+                        buf,
+                        len,
+                        &copied);
 
-    count = data->RX_index;
-    data->RX_index = 0;
-    return ret ? ret : count;
+    // ret = copy_to_user(buf, data->RX, data->RX_index);
+    // copied = data->RX_index;
+    // data->RX_index = 0;
+
+    // printk("accum len = %d\n", data->RX_len);
+    // data->RX_len = 0;
+ 
+    if (ret)
+        return ret;
+ 
+    return copied;
 }
  
 static long usb1_ioctl(struct file *file,
@@ -194,6 +230,9 @@ static void descriptor_work_func(struct work_struct *work){
 #endif
         // Setup FIFO, config once
         USB1_SetupBulkFifos(data, 4, 3);
+
+        /* drop old data; no producer is running yet */
+        kfifo_reset(&data->rx_fifo);                    
 
         /* drop old data; no producer is running yet */                  
         data->rx_task = kthread_run(usb1_rx_thread, data, "usb1_rx");
@@ -322,7 +361,7 @@ static int usb1_probe(struct platform_device *pdev)
     USB1_reset(data);
     PHY1_init(data);
     USB1_init(data);
-    data->RX_index = 0;
+    //data->RX_index = 0;
 
     // clear stuff
     INIT_WORK(&data->descriptor_work, descriptor_work_func);
@@ -331,7 +370,7 @@ static int usb1_probe(struct platform_device *pdev)
     mutex_init(&data->hw_lock);
     init_waitqueue_head(&data->rx_wait);
     init_waitqueue_head(&data->irq_wait);
-    //init_waitqueue_head(&data->irq_wait_reg);
+    INIT_KFIFO(data->rx_fifo);
 
     return 0;
 }

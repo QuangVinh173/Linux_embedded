@@ -389,7 +389,7 @@ struct usb_DeviceDescriptor {
     u8 ep_bulk_in_bInterval;  // 62: 0x00
 } __attribute__((packed));  // Prevents padding; total size now 80 bytes;
 
-
+#define USB1_RX_FIFO_SIZE 2048
 struct usb_device_data {
 
     dev_t dev_num;
@@ -413,8 +413,9 @@ struct usb_device_data {
     int irq1;
     int irqs;
 
-    u8 RX[256];
-    u8 RX_index;
+    // u8 RX[256];
+    // u8 RX_index;
+    u16 RX_len;
 
     bool done_configured;
 
@@ -431,6 +432,7 @@ struct usb_device_data {
     struct mutex        hw_lock;      /* INDEX + endpoint registers */
     wait_queue_head_t   rx_wait;
     wait_queue_head_t   irq_wait;
+    DECLARE_KFIFO(rx_fifo, u8, USB1_RX_FIFO_SIZE); /* size must be a power of 2 */
 };
 
 /* ================== Handler ====================*/
