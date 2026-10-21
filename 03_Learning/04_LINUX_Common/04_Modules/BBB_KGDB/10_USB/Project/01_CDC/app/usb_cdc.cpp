@@ -207,37 +207,60 @@ bool CDCUSB::readData(std::string& response, int timeoutMs)
     }
 
     response.clear();
+
     const auto deadline = std::chrono::steady_clock::now()
                         + std::chrono::milliseconds(timeoutMs);
 
-    /*
-     * /dev/usb1 is a custom character device, not a TTY. The current
-     * kernel file_operations has no .poll callback, so poll() cannot be
-     * relied on to report RX FIFO readiness. usb1_read() waits on the
-     * driver's RX FIFO and returns -EAGAIN when its own wait expires.
-     */
-    while (response.size() < MAX_RESPONSE_SIZE) {
+    while (true) {
+        // Check whether a complete line is already buffered.
+        auto newline = rx_pending_.find('\n');
+
+        if (newline != std::string::npos) {
+            response = rx_pending_.substr(0, newline);
+
+            // Consume only this response, preserving subsequent bytes.
+            rx_pending_.erase(0, newline + 1);
+
+            if (!response.empty() && response.back() == '\r') {
+                response.pop_back();
+            }
+
+            // Optional: discard empty lines.
+            if (response.empty()) {
+                continue;
+            }
+
+            std::cout << "Received[" << response.size()
+                      << "]: '" << response << "'\n";
+
+            return true;
+        }
+
         if (std::chrono::steady_clock::now() >= deadline) {
             std::cerr << "Response timeout. Partial response: '"
-                      << response << "'\n";
+                      << rx_pending_ << "'\n";
             return false;
         }
 
         char buffer[256];
+
         const ssize_t n = read(fd_, buffer, sizeof(buffer));
 
         if (n < 0) {
-            if (errno == EINTR)
+            if (errno == EINTR) {
                 continue;
+            }
 
-            if (errno == EAGAIN || errno == EWOULDBLOCK ||
+            if (errno == EAGAIN ||
+                errno == EWOULDBLOCK ||
                 errno == ETIMEDOUT) {
                 std::cerr << "Response timeout. Partial response: '"
-                          << response << "'\n";
+                          << rx_pending_ << "'\n";
                 return false;
             }
 
-            std::cerr << "Read failed: " << std::strerror(errno) << '\n';
+            std::cerr << "Read failed: "
+                      << std::strerror(errno) << '\n';
             return false;
         }
 
@@ -246,22 +269,14 @@ bool CDCUSB::readData(std::string& response, int timeoutMs)
             return false;
         }
 
-        response.append(buffer, static_cast<std::size_t>(n));
+        rx_pending_.append(buffer, static_cast<std::size_t>(n));
 
-        const auto newline = response.find('\n');
-        if (newline != std::string::npos) {
-            response.resize(newline);
-            if (!response.empty() && response.back() == '\r')
-                response.pop_back();
-
-            std::cout << "Received[" << response.size() << "]: '"
-                      << response << "'\n";
-            return true;
+        if (rx_pending_.size() > MAX_RESPONSE_SIZE * 2) {
+            std::cerr << "Receive buffer exceeded maximum size.\n";
+            rx_pending_.clear();
+            return false;
         }
     }
-
-    std::cerr << "Response exceeded maximum size without a line terminator.\n";
-    return false;
 }
 
 void CDCUSB::writeReadOption()

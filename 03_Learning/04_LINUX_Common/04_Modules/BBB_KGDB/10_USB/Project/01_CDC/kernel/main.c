@@ -16,9 +16,6 @@
 #define DRIVER_NAME "usb1_driver"
 #define DEVICE_NAME "usb1"
 
-void print_arr(u8* d, u16 len, u8* name){
-    printk("%s[%d] = %*ph\n", name, len, len, d);
-}
 
 /* File operation functions */
 static int usb1_open(struct inode *inode, struct file *file){
@@ -41,11 +38,8 @@ static int usb1_open(struct inode *inode, struct file *file){
 
 static int usb1_release(struct inode *inode, struct file *filp)
 {
-    struct usb_device_data *usb1 = container_of(inode->i_cdev, struct usb_device_data, cdev);
-    filp->private_data = usb1;
-
-    /* Do nothing */
-
+    (void)inode;
+    (void)filp;
     return 0;
 }
 
@@ -54,10 +48,8 @@ static ssize_t usb1_write(struct file *filp, const char __user *buf, size_t coun
     struct usb_device_data *data = filp->private_data;
     char *kbuf;
     int ret;
-    u16 MaxPktSize;
     u8 epNum_bulk_out_addr, out;
 
-    // schedule_work(&data->re_request_work);
     if (!data)
     {
         pr_err("NULL data\n");
@@ -68,12 +60,11 @@ static ssize_t usb1_write(struct file *filp, const char __user *buf, size_t coun
         return -2;
     }
 
-    MaxPktSize = data->InsDeviceDescriptor.ep_bulk_out_wMaxPacketSize;
- 
-    // // Limit with max pkt size
-    // if (count > MaxPktSize) count = MaxPktSize;
-
+#if (PRINT_DEBUG_TX_RX_SYNC)
     printk("usb1_write -> count = %d\n", count);
+#endif
+
+    data->debug_sz = count;
 
     /* Create kernel buffer */
     kbuf = kmalloc(count, GFP_KERNEL);
@@ -90,21 +81,32 @@ static ssize_t usb1_write(struct file *filp, const char __user *buf, size_t coun
 
     /* bit 7 is r/w */
     out = data->InsDeviceDescriptor.ep_bulk_out_bEndpointAddress & 0x80;
-    if ((out & 0x80)) {
-        printk("Invalid enpoint addr\n");
-        return -1;
+    if (out & 0x80) {
+        dev_err(data->dev, "Invalid bulk OUT endpoint address\n");
+        kfree(kbuf);
+        return -EINVAL;
     }
-    // reset buffer idx
-    //data->RX_index = 0;
-
+#if (PRINT_DEBUG_TX_RX_SYNC)
     printk("Sending OutData to Arduino\n");
+#endif
+
+#if (BUG_NOT_ENOUGH_BYTE_RX)
     mutex_lock(&data->hw_lock);
+#endif
+
     ret = USB1_OUT_Phase_Bulk(data, epNum_bulk_out_addr, ARDUINO_DEVICE_ADDR, kbuf, count);
+
+#if (BUG_NOT_ENOUGH_BYTE_RX)
     mutex_unlock(&data->hw_lock);
+#endif
+
+    kfree(kbuf);
+
     if (ret < 0) {
-        dev_info(data->dev, "Send error\n");
-        return -1;
+        dev_err(data->dev, "Bulk OUT transfer failed: %d\n", ret);
+        return ret;
     }
+
     return count;
 }
 
@@ -127,7 +129,6 @@ static ssize_t usb1_read(struct file *filp, char __user *buf, size_t len, loff_t
 
         !kfifo_is_empty(&data->rx_fifo) 
 
-        // data->RX_index
         ,
         msecs_to_jiffies(3000));
 
@@ -141,21 +142,31 @@ static ssize_t usb1_read(struct file *filp, char __user *buf, size_t len, loff_t
     if (!READ_ONCE(data->done_configured))
         return -ENODEV;         /* Device disconnected */
  
+#if (PRINT_DEBUG_TX_RX_SYNC)
+        unsigned char first_byte;
+    if (kfifo_out_peek(&data->rx_fifo, &first_byte, 1) == 1) {
+        pr_info("RX FIFO first byte: 0x%02x\n", first_byte);
+    }
+#endif
+
     /*
      * Copy up to 'len' bytes from kernel FIFO to user space.
      * Remaining bytes stay inside rx_fifo for the next read().
      */
+#if (!BUG_NOT_ENOUGH_BYTE_RX)
+    mutex_lock(&data->rx_fifo_lock);
+#endif
     ret = kfifo_to_user(&data->rx_fifo,
                         buf,
                         len,
                         &copied);
+#if (PRINT_DEBUG_TX_RX_SYNC)
+    printk("copied = %d\n", copied);
+#endif
+#if (!BUG_NOT_ENOUGH_BYTE_RX)
+    mutex_unlock(&data->rx_fifo_lock);
+#endif
 
-    // ret = copy_to_user(buf, data->RX, data->RX_index);
-    // copied = data->RX_index;
-    // data->RX_index = 0;
-
-    // printk("accum len = %d\n", data->RX_len);
-    // data->RX_len = 0;
  
     if (ret)
         return ret;
@@ -368,6 +379,7 @@ static int usb1_probe(struct platform_device *pdev)
     INIT_WORK(&data->descriptor_clear_work, descriptor_clear_work_func);
 
     mutex_init(&data->hw_lock);
+    mutex_init(&data->rx_fifo_lock);
     init_waitqueue_head(&data->rx_wait);
     init_waitqueue_head(&data->irq_wait);
     INIT_KFIFO(data->rx_fifo);
@@ -436,4 +448,3 @@ module_platform_driver(usb_device_driver);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Soviet");
 MODULE_DESCRIPTION("Custom USB1 Device Driver for BeagleBone Black USB1");
-

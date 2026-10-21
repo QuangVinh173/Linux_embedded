@@ -29,6 +29,8 @@ struct cdc_info {
     _IOW(BBB_CDC_IOC_MAGIC, 2, struct cdc_info)
 
 class CDCUSB {
+private:
+    std::string rx_pending_;
 public:
     CDCUSB();
     ~CDCUSB();

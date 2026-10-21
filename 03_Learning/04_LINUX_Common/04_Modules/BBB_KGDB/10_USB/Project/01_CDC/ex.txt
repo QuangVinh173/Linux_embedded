@@ -1,0 +1,8 @@
+Implement USB:
+- Porting USB driver
+- Design USB cdc write + read
+	+ Update CPU effiency by wait_event_interruptible_timeout, not using while()
+	+ setIdx(proxy) -> use mutex to lock write and read as read in POLLING mode to read incoming data from 
+	+ Use kernel FIFO loaded to userspace, local buffer for reading from device
+	+ Apply DMA for CPU efficiency
+	+ Apply the retry mechanism when device sends NACK (busy)

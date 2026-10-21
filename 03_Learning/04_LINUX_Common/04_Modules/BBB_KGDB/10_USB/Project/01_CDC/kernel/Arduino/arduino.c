@@ -51,17 +51,17 @@ void loop() {
   
   // Process if full line received.
   if (stringComplete) {
-    // Trim any trailing \r if present (Windows CRLF).
-    if (inputString.endsWith("\r")) {
-      inputString = inputString.substring(0, inputString.length() - 1);
-    }
+    // // Trim any trailing \r if present (Windows CRLF).
+    // if (inputString.endsWith("\r")) {
+    //   inputString = inputString.substring(0, inputString.length() - 1);
+    // }
     
     // Echo response: Send back the input with prefix.
     //Serial.print("Received: ");
 
-    delay(50);
+    //delay(50);
     Serial.print(inputString);
-    Serial.println();  // Add newline for clean output
+    //Serial.println();  // Add newline for clean output
 
     
     // Clear for next input.

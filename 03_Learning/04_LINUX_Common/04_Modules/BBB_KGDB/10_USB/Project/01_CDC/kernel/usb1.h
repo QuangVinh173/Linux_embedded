@@ -18,7 +18,6 @@
 #include <linux/kfifo.h>
 #include <linux/mutex.h>
 #include <linux/wait.h>
-#include <linux/poll.h>
 
 /* CONTROL */
 #define INDEX_USED 1
@@ -426,13 +425,14 @@ struct usb_device_data {
     struct cdc_status status;
     struct cdc_info info;
 
-
-
     struct task_struct *rx_task;
     struct mutex        hw_lock;      /* INDEX + endpoint registers */
+    struct mutex rx_fifo_lock;
     wait_queue_head_t   rx_wait;
     wait_queue_head_t   irq_wait;
     DECLARE_KFIFO(rx_fifo, u8, USB1_RX_FIFO_SIZE); /* size must be a power of 2 */
+
+    u16 debug_sz;
 };
 
 /* ================== Handler ====================*/
@@ -472,5 +472,4 @@ int USB1_IN_Phase_Bulk_init(struct usb_device_data *data, u8 epnum, u8 addr, u8*
 
 int usb1_rx_thread(void *arg);
 #endif
-
 

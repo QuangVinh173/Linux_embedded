@@ -54,14 +54,15 @@ int main()
 
     for (int i = 0; i < loops; ++i) {
         const std::string tx =
-            "Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + "
+            std::to_string(i + 1) + 
+            " Chu and Han war1 + Chu and Han war2 + Chu and Han war3 + "
             "Chu and Han war4 + Chu and Han war5 + Chu and Han war6 + "
-            "Chu and Han war7!!!!_ times: " + std::to_string(i + 1);
+            "Chu and Han war7!!!!_ times: ";
         const std::string packet = tx + "\n";
         std::string rx;
 
         std::cout << "[" << (i + 1) << "/" << loops << "] Sending command...\n";
-
+        printf("sz = %d\n", packet.size());
         if (!usb.writeData(packet)) {
             ++failed;
             std::cout << "**RESULT: FAIL (write) **\n===================\n";
