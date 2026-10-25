@@ -6,3 +6,8 @@ Implement USB:
 	+ Use kernel FIFO loaded to userspace, local buffer for reading from device
 	+ Apply DMA for CPU efficiency
 	+ Apply the retry mechanism when device sends NACK (busy)
+	
+	
+BUG: BUG_NOT_ENOUGH_BYTE_RX in the code
+Not sync between TX and RX (for loger packet, > wMaxPacketSize: 64 bytes)
+
